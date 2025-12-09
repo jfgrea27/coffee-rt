@@ -1,0 +1,238 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: coffee-rt
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run Ruff linter
+        run: uv run ruff check .
+
+      - name: Run Ruff formatter check
+        run: uv run ruff format --check .
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          uv pip install pytest-cov
+
+      - name: Run shared tests with coverage
+        run: |
+          cd backend/shared
+          uv run pytest tests/ -v --tb=short \
+            --cov=src/shared \
+            --cov-report=xml:../../coverage-shared.xml \
+            --cov-report=term-missing
+
+      - name: Run cafe_order_api tests with coverage
+        run: |
+          cd backend/cafe_order_api
+          uv run pytest tests/ -v --tb=short \
+            --cov=src/cafe_order_api \
+            --cov-report=xml:../../coverage-api.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Run cafe_order_aggregator tests with coverage
+        run: |
+          cd backend/cafe_order_aggregator
+          uv run pytest tests/ -v --tb=short \
+            --cov=src/cafe_order_aggregator \
+            --cov-report=xml:../../coverage-aggregator.xml \
+            --cov-report=term-missing
+
+      - name: Combine coverage reports
+        run: |
+          uv pip install coverage
+          uv run coverage combine --keep \
+            coverage-shared.xml \
+            coverage-api.xml \
+            coverage-aggregator.xml || true
+          # Generate a simple combined summary
+          echo "## Coverage Summary" > coverage-summary.md
+          echo "" >> coverage-summary.md
+          echo "| Package | Coverage |" >> coverage-summary.md
+          echo "|---------|----------|" >> coverage-summary.md
+
+          # Extract coverage percentages from XML files
+          for pkg in shared api aggregator; do
+            if [ -f "coverage-${pkg}.xml" ]; then
+              # Extract line-rate from coverage XML
+              rate=$(grep -o 'line-rate="[0-9.]*"' "coverage-${pkg}.xml" | head -1 | grep -o '[0-9.]*')
+              if [ -n "$rate" ]; then
+                pct=$(echo "$rate * 100" | bc -l | xargs printf "%.1f")
+                echo "| ${pkg} | ${pct}% |" >> coverage-summary.md
+              fi
+            fi
+          done
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage-*.xml
+            coverage-summary.md
+
+      - name: Add coverage comment to PR
+        if: github.event_name == 'pull_request'
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERAGE_DATA_BRANCH: coverage-data
+          MINIMUM_GREEN: 80
+          MINIMUM_ORANGE: 70
+          ANNOTATE_MISSING_LINES: true
+          ANNOTATION_TYPE: warning
+        continue-on-error: true
+
+      - name: Post coverage summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read coverage summary
+            let summary = '';
+            try {
+              summary = fs.readFileSync('coverage-summary.md', 'utf8');
+            } catch (e) {
+              summary = '## Coverage Summary\n\nCoverage data not available.';
+            }
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## Coverage Summary')
+            );
+
+            const body = `${summary}
+
+            ---
+            *Updated for commit ${context.sha.substring(0, 7)}*`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run integration tests
+        run: |
+          chmod +x .dev/integration_test/script.sh
+          ./.dev/integration_test/script.sh
+
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Mock ECR login - in production, use:
+      # - name: Login to Amazon ECR
+      #   uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build cafe-order-api image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend/cafe_order_api
+          file: ./backend/cafe_order_api/Dockerfile
+          push: false
+          tags: |
+            ${{ env.ECR_REPOSITORY }}/cafe-order-api:${{ github.sha }}
+            ${{ env.ECR_REPOSITORY }}/cafe-order-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build cafe-order-aggregator image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend/cafe_order_aggregator
+          file: ./backend/cafe_order_aggregator/Dockerfile
+          push: false
+          tags: |
+            ${{ env.ECR_REPOSITORY }}/cafe-order-aggregator:${{ github.sha }}
+            ${{ env.ECR_REPOSITORY }}/cafe-order-aggregator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Mock ECR Push
+        run: |
+          echo "=== Mock ECR Push ==="
+          echo "Would push the following images to ECR:"
+          echo "  - ${{ env.ECR_REPOSITORY }}/cafe-order-api:${{ github.sha }}"
+          echo "  - ${{ env.ECR_REPOSITORY }}/cafe-order-api:latest"
+          echo "  - ${{ env.ECR_REPOSITORY }}/cafe-order-aggregator:${{ github.sha }}"
+          echo "  - ${{ env.ECR_REPOSITORY }}/cafe-order-aggregator:latest"
+          echo ""
+          echo "To enable real ECR push, uncomment the 'Login to Amazon ECR' step"
+          echo "and set push: true in the build steps."

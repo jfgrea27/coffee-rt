@@ -1,0 +1,13 @@
+# Cafe Order API
+
+## Create a new coffee order
+
+POST http://localhost:8005/api/order
+Content-Type: application/json
+
+{
+    "drink": "cappuccino",
+    "store": "uptown",
+    "price": 5.50,
+    "timestamp": "2025-12-09T10:30:00"
+}

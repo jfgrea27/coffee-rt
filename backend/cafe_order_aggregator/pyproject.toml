@@ -1,0 +1,36 @@
+[project]
+name = "cafe-order-aggregator"
+version = "0.1.0"
+description = "Cafe Order Aggregator - Metrics cron job"
+requires-python = ">=3.13"
+dependencies = ["coffee-rt-shared", "redis>=7.1.0", "psycopg[binary]>=3.1.0"]
+
+[project.scripts]
+cafe-aggregator = "cafe_order_aggregator.main:main"
+
+[tool.uv.sources]
+coffee-rt-shared = { workspace = true }
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "ruff>=0.8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest-cov>=7.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cafe_order_aggregator"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]

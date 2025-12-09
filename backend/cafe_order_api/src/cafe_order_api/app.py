@@ -1,0 +1,165 @@
+import logging
+from contextlib import asynccontextmanager
+
+import uvicorn
+from fastapi import Depends, FastAPI, Request
+from psycopg import AsyncConnection
+from redis.asyncio import Redis
+
+from cafe_order_api.domain import (
+    CoffeeOrderRequest,
+    CoffeeOrderResponse,
+    DashboardResponse,
+    HealthResponse,
+)
+from cafe_order_api.env import (
+    APP_HOST,
+    APP_PORT,
+    APP_TITLE,
+    APP_VERSION,
+    DATABASE_URL,
+    DATABASE_URL_SANITIZED,
+    LOG_FILE,
+    REDIS_URL,
+    REDIS_URL_SANITIZED,
+)
+from cafe_order_api.handlers.dashboard import get_dashboard as handle_get_dashboard
+from cafe_order_api.handlers.orders import create_order as handle_create_order
+from cafe_order_api.logger import get_uvicorn_config, setup_logging
+from cafe_order_api.middelware import ServiceHealthMiddleware
+
+app = FastAPI()
+
+
+setup_logging(LOG_FILE)
+
+
+logger = logging.getLogger(__name__)
+
+
+async def get_redis_connection(request: Request) -> Redis:
+    """Get Redis connection from app state."""
+    return request.app.state.redis_connection
+
+
+async def get_db_connection(request: Request) -> AsyncConnection:
+    """Get database connection from app state."""
+    return request.app.state.db_connection
+
+
+async def _init_db_connection(app: FastAPI):
+    """Initialize database connection and update app state."""
+    try:
+        db_connection = await AsyncConnection.connect(DATABASE_URL)
+        logger.info("Database connection initialized")
+        app.state.db_ready = True
+        return db_connection
+    except Exception as e:
+        app.state.db_error = str(e)
+        logger.warning(f"Failed to initialize database connection: {e}")
+        return None
+
+
+async def _init_redis_connection(app: FastAPI):
+    """Initialize Redis connection and update app state."""
+    try:
+        redis_connection = await Redis.from_url(REDIS_URL)
+        logger.info("Redis connection initialized")
+        app.state.redis_ready = True
+        return redis_connection
+    except Exception as e:
+        app.state.redis_error = str(e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage the application lifespan."""
+    logger.info("Application startup complete")
+    app.state.db_ready = False
+    app.state.db_error = None
+    app.state.redis_ready = False
+    app.state.redis_error = None
+
+    db_connection = await _init_db_connection(app)
+    app.state.db_connection = db_connection
+    redis_connection = await _init_redis_connection(app)
+    app.state.redis_connection = redis_connection
+
+    yield
+
+    if redis_connection:
+        try:
+            await redis_connection.close()
+            logger.info("Redis connection closed")
+        except Exception as e:
+            logger.warning(f"Error closing Redis connection: {e}")
+
+    if db_connection:
+        try:
+            await db_connection.close()
+            logger.info("Database connection closed")
+        except Exception as e:
+            logger.warning(f"Error closing database connection: {e}")
+
+    logger.info("Application shutdown complete")
+
+
+app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
+
+# Add middleware to check service availability
+app.add_middleware(ServiceHealthMiddleware)
+
+
+@app.get("/health")
+async def health_check() -> HealthResponse:
+    """
+    Health check endpoint.
+
+    Returns detailed status of all connections and services.
+    Service is considered healthy if it's running, even if connections are down.
+    """
+    return HealthResponse(
+        status="ok",
+        service=APP_TITLE,
+        version=APP_VERSION,
+        connections={
+            "database": {
+                "db_url": DATABASE_URL_SANITIZED,
+                "ready": app.state.db_ready,
+                "error": app.state.db_error,
+            },
+            "redis": {
+                "redis_url": REDIS_URL_SANITIZED,
+                "ready": app.state.redis_ready,
+                "error": app.state.redis_error,
+            },
+        },
+    )
+
+
+@app.post("/api/order")
+async def create_order(
+    order: CoffeeOrderRequest, db: AsyncConnection = Depends(get_db_connection)
+) -> CoffeeOrderResponse:
+    """Create a new coffee order."""
+    return await handle_create_order(db=db, order=order)
+
+
+@app.get("/api/dashboard")
+async def get_dashboard(redis: Redis = Depends(get_redis_connection)) -> DashboardResponse:
+    """Get dashboard metrics from Redis cache."""
+    return await handle_get_dashboard(redis=redis)
+
+
+def main():
+    """Run the cafe order API service."""
+    uvicorn.run(
+        app,
+        host=APP_HOST,
+        port=int(APP_PORT),
+        log_config=get_uvicorn_config(),
+    )
+
+
+if __name__ == "__main__":
+    main()

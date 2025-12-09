@@ -1,0 +1,107 @@
+[project]
+name = "coffee-rt-dev"
+version = "0.1.0"
+description = "Coffee RT - Development environment"
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = ["pre-commit>=4.4.0", "cafe-order-api", "cafe-order-aggregator", "coffee-rt-shared"]
+
+[project.optional-dependencies]
+dev = [
+    "uvicorn[standard]>=0.24.0",
+    "fastapi>=0.104.0",
+    "debugpy>=1.8.0",
+    "pre-commit>=4.5.0",
+    "httpx>=0.25.0",
+    "sqlalchemy>=2.0.0",
+]
+
+lint = ["ruff>=0.1.0", "black>=23.0.0", "mypy>=1.0.0"]
+
+test = ["pytest>=7.4.0", "pytest-asyncio>=0.21.0", "pytest-cov>=4.1.0"]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
+[tool.uv.sources]
+cafe-order-api = { workspace = true }
+cafe-order-aggregator = { workspace = true }
+coffee-rt-shared = { workspace = true }
+
+[tool.uv.workspace]
+members = ["backend/cafe_order_api", "backend/cafe_order_aggregator", "backend/shared"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".git", "__pycache__", "build", "dist", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cafe-order-api"]
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# pytest config is in each package's pyproject.toml
+# Use `just test-all` to run all tests
+
+[tool.coverage.run]
+source = ["cafe-order-api"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+]

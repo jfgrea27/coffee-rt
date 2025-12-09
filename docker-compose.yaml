@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: coffee-rt
+      POSTGRES_PASSWORD: coffee-rt_password
+      POSTGRES_DB: coffee-rt
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coffee-rt -d coffee-rt"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coffee-rt
+
+  db-migrate:
+    build:
+      context: .
+      dockerfile: .dev/db-migrate/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://coffee-rt:coffee-rt_password@postgres:5432/coffee-rt
+      POSTGRES_SCHEMA: coffee_rt
+    networks:
+      - coffee-rt
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - coffee-rt
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  cafe-order-api:
+    build:
+      context: ./backend/cafe_order_api
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: coffee-rt
+      POSTGRES_PASSWORD: coffee-rt_password
+      POSTGRES_DB: coffee-rt
+      POSTGRES_SCHEMA: coffee_rt
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - coffee-rt
+
+networks:
+  coffee-rt:
+    driver: bridge
+
+volumes:
+  postgres_data:
