@@ -4,6 +4,7 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
+
 from cafe_order_api.handlers.dashboard import get_dashboard
 
 

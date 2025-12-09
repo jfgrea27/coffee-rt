@@ -4,9 +4,10 @@ from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from shared import Drink, Store
+
 from cafe_order_api.domain import CoffeeOrderRequest
 from cafe_order_api.handlers.orders import create_order
-from shared import Drink, Store
 
 
 @pytest.fixture

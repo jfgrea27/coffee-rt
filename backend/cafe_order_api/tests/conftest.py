@@ -4,9 +4,10 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from cafe_order_api.app import app
 from fastapi.testclient import TestClient
 from shared import Drink, Store
+
+from cafe_order_api.app import app
 
 
 @pytest.fixture

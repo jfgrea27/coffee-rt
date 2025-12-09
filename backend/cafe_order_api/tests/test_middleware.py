@@ -1,10 +1,10 @@
 """Tests for middleware."""
 
-
 import pytest
-from cafe_order_api.middelware import ServiceHealthMiddleware
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+from cafe_order_api.middelware import ServiceHealthMiddleware
 
 
 @pytest.fixture

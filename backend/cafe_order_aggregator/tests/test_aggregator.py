@@ -3,6 +3,8 @@
 import json
 
 import pytest
+from shared import CoffeeOrder, Drink, Store
+
 from cafe_order_aggregator.aggregator import (
     compute_hourly_metrics,
     compute_top5_drinks,
@@ -11,7 +13,6 @@ from cafe_order_aggregator.aggregator import (
     update_recent_orders,
     update_top5_drinks,
 )
-from shared import CoffeeOrder, Drink, Store
 
 
 class TestComputeHourlyMetrics:
@@ -223,4 +224,5 @@ class TestUpdateRecentOrders:
         """Test updating with no recent orders."""
         await update_recent_orders(mock_redis, [])
 
+        mock_redis.set.assert_called_once_with("orders:recent", "[]")
         mock_redis.set.assert_called_once_with("orders:recent", "[]")

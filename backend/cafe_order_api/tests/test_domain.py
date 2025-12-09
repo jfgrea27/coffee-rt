@@ -1,9 +1,10 @@
 """Tests for API-specific domain models."""
 
 import pytest
-from cafe_order_api.domain import CoffeeOrderRequest, CoffeeOrderResponse
 from pydantic import ValidationError
 from shared import Drink, Store
+
+from cafe_order_api.domain import CoffeeOrderRequest, CoffeeOrderResponse
 
 
 class TestCoffeeOrderRequest:

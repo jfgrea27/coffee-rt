@@ -5,12 +5,13 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from shared import Drink, Store
+
 from cafe_order_aggregator.db.queries import (
     get_orders_for_hour,
     get_orders_last_30_days,
     get_recent_orders,
 )
-from shared import Drink, Store
 
 
 @pytest.fixture

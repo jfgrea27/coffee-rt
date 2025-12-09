@@ -3,9 +3,10 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
+
 from cafe_order_api.app import app
 from cafe_order_api.domain import DashboardResponse, HourlyMetrics, RecentOrder
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture

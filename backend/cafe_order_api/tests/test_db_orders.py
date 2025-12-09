@@ -5,8 +5,9 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from cafe_order_api.db.orders import insert_order
 from shared import Drink, Store
+
+from cafe_order_api.db.orders import insert_order
 
 
 @pytest.fixture
