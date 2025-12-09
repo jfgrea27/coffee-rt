@@ -31,3 +31,12 @@ repos:
       - id: mixed-line-ending
         name: Check line endings
         args: ["--fix=lf"]
+
+  - repo: local
+    hooks:
+      - id: frontend-typecheck
+        name: Frontend TypeScript check
+        entry: bash -c 'cd frontend && npm run build -- --noEmit || npx tsc --noEmit'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
