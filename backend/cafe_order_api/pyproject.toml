@@ -20,7 +20,12 @@ dependencies = [
 coffee-rt-shared = { path = "../shared" }
 
 [project.optional-dependencies]
-dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "ruff>=0.8.0"]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.2.0",
+    "ruff>=0.8.0",
+    "coverage>=7.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -38,3 +43,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+[dependency-groups]
+dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "pytest-cov>=4.1.0", "ruff>=0.8.0", "coverage>=7.0.0"]

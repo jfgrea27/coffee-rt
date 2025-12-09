@@ -78,6 +78,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "coverage" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -91,6 +92,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "coffee-rt-shared", directory = "backend/shared" },
+    { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.2.0" },
@@ -120,6 +122,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "coverage" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -128,6 +131,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "coffee-rt-shared", directory = "backend/shared" },
+    { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "debugpy", specifier = ">=1.8.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", specifier = ">=0.25.0" },
@@ -254,6 +258,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },

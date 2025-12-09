@@ -6,3 +6,4 @@ logs/
 target/
 .coverage*
 node_modules/
+coverage/
