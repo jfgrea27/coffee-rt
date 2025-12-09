@@ -5,7 +5,15 @@ description = "Coffee RT - Development environment"
 readme = "README.md"
 requires-python = ">=3.13"
 
-dependencies = ["pre-commit>=4.4.0", "cafe-order-api", "cafe-order-aggregator", "coffee-rt-shared"]
+dependencies = [
+    "pre-commit>=4.4.0",
+    "cafe-order-api",
+    "cafe-order-aggregator",
+    "coffee-rt-shared",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "ruff>=0.14.0,<0.15.0",
+]
 
 [project.optional-dependencies]
 dev = [
