@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, WebSocket
 from psycopg import AsyncConnection
 from redis.asyncio import Redis
 
@@ -25,6 +25,7 @@ from cafe_order_api.env import (
 )
 from cafe_order_api.handlers.dashboard import get_dashboard as handle_get_dashboard
 from cafe_order_api.handlers.orders import create_order as handle_create_order
+from cafe_order_api.handlers.websocket import dashboard_websocket_handler
 from cafe_order_api.logger import get_uvicorn_config, setup_logging
 from cafe_order_api.middelware import ServiceHealthMiddleware
 
@@ -149,6 +150,13 @@ async def create_order(
 async def get_dashboard(redis: Redis = Depends(get_redis_connection)) -> DashboardResponse:
     """Get dashboard metrics from Redis cache."""
     return await handle_get_dashboard(redis=redis)
+
+
+@app.websocket("/ws/dashboard")
+async def websocket_dashboard(websocket: WebSocket):
+    """WebSocket endpoint for real-time dashboard updates."""
+    redis = app.state.redis_connection
+    await dashboard_websocket_handler(websocket, redis)
 
 
 def main():

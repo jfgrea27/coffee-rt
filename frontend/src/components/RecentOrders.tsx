@@ -1,0 +1,44 @@
+import type { RecentOrder } from '../types/dashboard';
+
+interface RecentOrdersProps {
+  orders: RecentOrder[];
+}
+
+export function RecentOrders({ orders }: RecentOrdersProps) {
+  const formatTimestamp = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div className="dashboard-card recent-orders">
+      <h2>Recent Orders</h2>
+      {orders.length === 0 ? (
+        <p className="no-data">No recent orders</p>
+      ) : (
+        <table className="orders-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Drink</th>
+              <th>Store</th>
+              <th>Price</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id}>
+                <td>{order.id}</td>
+                <td>{order.drink}</td>
+                <td>{order.store}</td>
+                <td>${order.price.toFixed(2)}</td>
+                <td>{formatTimestamp(order.timestamp)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}

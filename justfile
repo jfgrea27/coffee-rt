@@ -28,6 +28,25 @@ connect_db:
 run project:
     (cd backend/{{project}} && uv run src/{{project}}/app.py)
 
+# Frontend commands
+frontend-install:
+    cd frontend && npm install
+
+frontend-dev:
+    cd frontend && npm run dev
+
+frontend-build:
+    cd frontend && npm run build
+
+frontend-test:
+    cd frontend && npm test -- --run
+
+frontend-test-watch:
+    cd frontend && npm test
+
+frontend-lint:
+    cd frontend && npx tsc --noEmit
+
 test project:
     cd backend/{{project}} && uv run pytest -v
 
@@ -35,6 +54,7 @@ test-all:
     cd backend/shared && uv run pytest -v
     cd backend/cafe_order_api && uv run pytest -v
     cd backend/cafe_order_aggregator && uv run pytest -v
+    cd frontend && npm test -- --run
 
 coverage project:
     cd backend/{{project}} && uv run pytest --cov=src --cov-report=term-missing --cov-report=html

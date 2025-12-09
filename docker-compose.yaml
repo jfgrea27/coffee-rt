@@ -70,6 +70,18 @@ services:
     networks:
       - coffee-rt
 
+  cafe-dashboard:
+    container_name: cafe-dashboard
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - cafe-order-api
+    networks:
+      - coffee-rt
+
 networks:
   coffee-rt:
     driver: bridge

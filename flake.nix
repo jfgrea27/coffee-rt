@@ -18,6 +18,8 @@
             uv
             just
             postgresql
+            nodejs
+            yarn
           ];
         };
       }
