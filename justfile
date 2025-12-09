@@ -14,7 +14,7 @@ format:
 # external services
 docker-external-services:
     docker compose down -v
-    docker compose up --build postgres db-migrate redis
+    docker compose up --build postgres db-migrate redis redis-init
 
 docker-external-services-down:
     docker compose down -v
@@ -68,3 +68,10 @@ coverage-all:
     cd backend/cafe_order_aggregator && uv run coverage run --source=src -m pytest
     cd backend/cafe_order_aggregator && uv run coverage report --show-missing
     cd frontend && npm test -- --coverage
+
+
+docker-up:
+    docker compose up --build
+
+docker-down:
+    docker compose down -v

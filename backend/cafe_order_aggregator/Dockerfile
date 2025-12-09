@@ -13,5 +13,5 @@ COPY backend/cafe_order_aggregator ./backend/cafe_order_aggregator
 WORKDIR /app/backend/cafe_order_aggregator
 RUN uv sync --no-dev
 
-# Run the aggregator
+# Run the aggregator (one-shot, for k8s CronJob)
 CMD ["uv", "run", "cafe-aggregator"]

@@ -20,6 +20,9 @@
             postgresql
             nodejs
             yarn
+            redis
+            kubernetes-helm
+            kubectl
           ];
         };
       }

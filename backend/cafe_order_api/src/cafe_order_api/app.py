@@ -143,13 +143,19 @@ async def create_order(
     order: CoffeeOrderRequest, db: AsyncConnection = Depends(get_db_connection)
 ) -> CoffeeOrderResponse:
     """Create a new coffee order."""
-    return await handle_create_order(db=db, order=order)
+    logger.info(f"Creating order: {order}")
+    res = await handle_create_order(db=db, order=order)
+    logger.info(f"Order created: {res}")
+    return res
 
 
 @app.get("/api/dashboard")
 async def get_dashboard(redis: Redis = Depends(get_redis_connection)) -> DashboardResponse:
     """Get dashboard metrics from Redis cache."""
-    return await handle_get_dashboard(redis=redis)
+    logger.info(f"Getting dashboard: {redis}")
+    res = await handle_get_dashboard(redis=redis)
+    logger.info(f"Dashboard: {res}")
+    return res
 
 
 @app.websocket("/ws/dashboard")
@@ -170,4 +176,5 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
     main()

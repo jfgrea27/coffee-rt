@@ -47,6 +47,21 @@ services:
       retries: 5
       start_period: 10s
 
+  redis-init:
+    container_name: redis-init
+    build:
+      context: .
+      dockerfile: .dev/redis-init/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_INIT: ${REDIS_INIT}
+    networks:
+      - coffee-rt
+
   cafe-order-api:
     container_name: cafe-order-api
     build:
@@ -57,8 +72,8 @@ services:
     depends_on:
       db-migrate:
         condition: service_completed_successfully
-      redis:
-        condition: service_healthy
+      redis-init:
+        condition: service_completed_successfully
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_USER: coffee-rt
@@ -81,6 +96,28 @@ services:
       - cafe-order-api
     networks:
       - coffee-rt
+
+  cafe-order-aggregator:
+    container_name: cafe-order-aggregator
+    build:
+      context: .
+      dockerfile: backend/cafe_order_aggregator/Dockerfile.cron
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+      redis-init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: coffee-rt
+      POSTGRES_PASSWORD: coffee-rt_password
+      POSTGRES_DB: coffee-rt
+      POSTGRES_SCHEMA: coffee_rt
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - coffee-rt
+    restart: unless-stopped
 
 networks:
   coffee-rt:

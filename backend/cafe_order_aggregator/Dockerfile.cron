@@ -1,0 +1,36 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install supercronic (lightweight cron for containers)
+ARG SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.40/supercronic-linux-amd64
+ARG SUPERCRONIC_SHA1SUM=8ab9683df4b8287ba1e09923101d6ebf532b6eba
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSLO "$SUPERCRONIC_URL" \
+    && echo "${SUPERCRONIC_SHA1SUM}  supercronic-linux-amd64" | sha1sum -c - \
+    && chmod +x supercronic-linux-amd64 \
+    && mv supercronic-linux-amd64 /usr/local/bin/supercronic \
+    && apt-get remove -y curl \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY backend/shared ./backend/shared
+COPY backend/cafe_order_aggregator ./backend/cafe_order_aggregator
+
+# Install dependencies from package directory
+WORKDIR /app/backend/cafe_order_aggregator
+RUN uv sync --no-dev
+
+# Create runner script (using sh, not bash - slim image)
+RUN printf '#!/bin/sh\ncd /app/backend/cafe_order_aggregator && /usr/local/bin/uv run cafe-aggregator\n' > /app/run-aggregator.sh \
+    && chmod +x /app/run-aggregator.sh
+
+# Create crontab file - run every minute
+RUN printf '* * * * * /bin/sh /app/run-aggregator.sh\n' > /app/crontab
+
+# Run supercronic with the crontab
+CMD ["supercronic", "/app/crontab"]

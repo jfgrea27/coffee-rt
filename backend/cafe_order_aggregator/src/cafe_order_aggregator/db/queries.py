@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from psycopg import AsyncConnection
 from shared import CoffeeOrder, Drink, Store
 
+from cafe_order_aggregator.env import POSTGRES_SCHEMA
+
 
 async def get_orders_for_hour(db: AsyncConnection, hour: int) -> list[CoffeeOrder]:
     """Get all orders for a specific hour today.
@@ -22,9 +24,9 @@ async def get_orders_for_hour(db: AsyncConnection, hour: int) -> list[CoffeeOrde
 
     async with db.cursor() as cur:
         await cur.execute(
-            """
+            f"""
             SELECT id, drink, store, price, timestamp
-            FROM orders
+            FROM {POSTGRES_SCHEMA}.orders
             WHERE timestamp >= %s AND timestamp < %s
             ORDER BY timestamp DESC
             """,
@@ -57,9 +59,9 @@ async def get_orders_last_30_days(db: AsyncConnection) -> list[CoffeeOrder]:
 
     async with db.cursor() as cur:
         await cur.execute(
-            """
+            f"""
             SELECT id, drink, store, price, timestamp
-            FROM orders
+            FROM {POSTGRES_SCHEMA}.orders
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
             """,
@@ -92,9 +94,9 @@ async def get_recent_orders(db: AsyncConnection) -> list[CoffeeOrder]:
 
     async with db.cursor() as cur:
         await cur.execute(
-            """
+            f"""
             SELECT id, drink, store, price, timestamp
-            FROM orders
+            FROM {POSTGRES_SCHEMA}.orders
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
             """,

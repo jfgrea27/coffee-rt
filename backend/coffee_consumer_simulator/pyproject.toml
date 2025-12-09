@@ -1,0 +1,16 @@
+[project]
+name = "coffee-consumer-simulator"
+version = "0.1.0"
+description = "Locust-based simulator for coffee order load testing"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "locust>=2.32.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/coffee_consumer_simulator"]
