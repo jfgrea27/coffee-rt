@@ -16,6 +16,12 @@ docker-external-services:
     docker compose down -v
     docker compose up --build postgres db-migrate redis
 
+docker-external-services-down:
+    docker compose down -v
+
+integration-test:
+    .dev/integration_test/script.sh
+
 connect_db:
     PGPASSWORD=coffee-rt_password psql -h localhost -p 5432 -U coffee-rt -d coffee-rt
 

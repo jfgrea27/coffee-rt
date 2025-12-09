@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-coffee-rt-shared = { workspace = true }
+coffee-rt-shared = { path = "../shared" }
 
 [project.optional-dependencies]
 dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "ruff>=0.8.0"]
@@ -27,7 +27,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cafe_order_api"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

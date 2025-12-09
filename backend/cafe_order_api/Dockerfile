@@ -2,20 +2,16 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files
-COPY pyproject.toml .
+# Copy package files
+COPY backend/shared ./backend/shared
+COPY backend/cafe_order_api ./backend/cafe_order_api
 
-# Install Python dependencies
-RUN pip install --no-cache-dir . psycopg[binary]
-
-# Copy application code
-COPY src/ ./src/
+# Install dependencies from package directory
+WORKDIR /app/backend/cafe_order_api
+RUN uv sync --no-dev
 
 # Create logs directory
 RUN mkdir -p logs
@@ -24,4 +20,4 @@ RUN mkdir -p logs
 EXPOSE 8005
 
 # Run the application
-CMD ["python", "-m", "cafe_order_api.app"]
+CMD ["uv", "run", "python", "-m", "cafe_order_api.app"]

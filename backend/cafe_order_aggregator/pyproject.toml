@@ -9,7 +9,7 @@ dependencies = ["coffee-rt-shared", "redis>=7.1.0", "psycopg[binary]>=3.1.0"]
 cafe-aggregator = "cafe_order_aggregator.main:main"
 
 [tool.uv.sources]
-coffee-rt-shared = { workspace = true }
+coffee-rt-shared = { path = "../shared" }
 
 [project.optional-dependencies]
 dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "ruff>=0.8.0"]

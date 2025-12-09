@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: postgres
     image: postgres:16-alpine
     ports:
       - "5432:5432"
@@ -19,6 +20,7 @@ services:
       - coffee-rt
 
   db-migrate:
+    container_name: db-migrate
     build:
       context: .
       dockerfile: .dev/db-migrate/Dockerfile
@@ -32,6 +34,7 @@ services:
       - coffee-rt
 
   redis:
+    container_name: redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -45,9 +48,10 @@ services:
       start_period: 10s
 
   cafe-order-api:
+    container_name: cafe-order-api
     build:
-      context: ./backend/cafe_order_api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/cafe_order_api/Dockerfile
     ports:
       - "8005:8005"
     depends_on:

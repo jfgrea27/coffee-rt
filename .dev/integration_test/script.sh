@@ -89,8 +89,8 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 ORDER_RESPONSE=$(curl -s -X POST http://localhost:8005/api/order \
     -H "Content-Type: application/json" \
     -d "{
-        \"drink\": \"Latte\",
-        \"store\": \"Downtown\",
+        \"drink\": \"latte\",
+        \"store\": \"downtown\",
         \"price\": 4.50,
         \"timestamp\": \"$TIMESTAMP\"
     }")
@@ -110,7 +110,7 @@ log_info "Test 3: Verifying order in database..."
 DB_RESULT=$(docker compose exec -T postgres psql -U coffee-rt -d coffee-rt -t -c \
     "SELECT id, drink, store, price FROM coffee_rt.orders WHERE id = $ORDER_ID;")
 
-if echo "$DB_RESULT" | grep -q "Latte"; then
+if echo "$DB_RESULT" | grep -q "latte"; then
     log_info "Order verified in database"
 else
     log_error "Order not found in database. Query result: $DB_RESULT"
@@ -118,7 +118,7 @@ else
 fi
 
 # Verify all fields
-if echo "$DB_RESULT" | grep -q "Downtown" && echo "$DB_RESULT" | grep -q "4.5"; then
+if echo "$DB_RESULT" | grep -q "downtown" && echo "$DB_RESULT" | grep -q "4.5"; then
     log_info "All order fields verified correctly"
 else
     log_error "Order fields mismatch. Expected drink=Latte, store=Downtown, price=4.50"
@@ -133,8 +133,8 @@ for i in {1..3}; do
     curl -s -X POST http://localhost:8005/api/order \
         -H "Content-Type: application/json" \
         -d "{
-            \"drink\": \"Espresso\",
-            \"store\": \"Uptown\",
+            \"drink\": \"americano\",
+            \"store\": \"uptown\",
             \"price\": 3.00,
             \"timestamp\": \"$TIMESTAMP\"
         }" > /dev/null

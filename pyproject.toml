@@ -31,10 +31,10 @@ packages = []
 [tool.uv.sources]
 cafe-order-api = { workspace = true }
 cafe-order-aggregator = { workspace = true }
-coffee-rt-shared = { workspace = true }
+coffee-rt-shared = { path = "backend/shared" }
 
 [tool.uv.workspace]
-members = ["backend/cafe_order_api", "backend/cafe_order_aggregator", "backend/shared"]
+members = ["backend/cafe_order_api", "backend/cafe_order_aggregator"]
 
 [tool.black]
 line-length = 100

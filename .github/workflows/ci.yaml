@@ -82,13 +82,8 @@ jobs:
             --cov-report=xml:../../coverage-aggregator.xml \
             --cov-report=term-missing
 
-      - name: Combine coverage reports
+      - name: Generate coverage summary
         run: |
-          uv pip install coverage
-          uv run coverage combine --keep \
-            coverage-shared.xml \
-            coverage-api.xml \
-            coverage-aggregator.xml || true
           # Generate a simple combined summary
           echo "## Coverage Summary" > coverage-summary.md
           echo "" >> coverage-summary.md
@@ -204,7 +199,7 @@ jobs:
       - name: Build cafe-order-api image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend/cafe_order_api
+          context: .
           file: ./backend/cafe_order_api/Dockerfile
           push: false
           tags: |
@@ -216,7 +211,7 @@ jobs:
       - name: Build cafe-order-aggregator image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend/cafe_order_aggregator
+          context: .
           file: ./backend/cafe_order_aggregator/Dockerfile
           push: false
           tags: |
