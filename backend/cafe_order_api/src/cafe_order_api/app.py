@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from psycopg import AsyncConnection
 from redis.asyncio import Redis
+from shared import get_uvicorn_config, setup_logging
 
 from cafe_order_api.domain import (
     CoffeeOrderRequest,
@@ -17,6 +18,8 @@ from cafe_order_api.env import (
     APP_PORT,
     APP_TITLE,
     APP_VERSION,
+    CONNECTION_INITIAL_BACKOFF,
+    CONNECTION_MAX_RETRIES,
     DATABASE_URL,
     DATABASE_URL_SANITIZED,
     LOG_FILE,
@@ -26,8 +29,8 @@ from cafe_order_api.env import (
 from cafe_order_api.handlers.dashboard import get_dashboard as handle_get_dashboard
 from cafe_order_api.handlers.orders import create_order as handle_create_order
 from cafe_order_api.handlers.websocket import dashboard_websocket_handler
-from cafe_order_api.logger import get_uvicorn_config, setup_logging
 from cafe_order_api.middelware import ServiceHealthMiddleware
+from cafe_order_api.utils import connect_with_retry
 
 app = FastAPI()
 
@@ -50,26 +53,46 @@ async def get_db_connection(request: Request) -> AsyncConnection:
 
 async def _init_db_connection(app: FastAPI):
     """Initialize database connection and update app state."""
-    try:
-        db_connection = await AsyncConnection.connect(DATABASE_URL)
+    result = await connect_with_retry(
+        lambda: AsyncConnection.connect(DATABASE_URL),
+        "database",
+        max_retries=CONNECTION_MAX_RETRIES,
+        initial_backoff=CONNECTION_INITIAL_BACKOFF,
+    )
+    if isinstance(result, tuple):
+        _, error = result
+        app.state.db_error = str(error)
+        logger.warning(f"Failed to initialize database connection: {error}")
+        return None
+    else:
         logger.info("Database connection initialized")
         app.state.db_ready = True
-        return db_connection
-    except Exception as e:
-        app.state.db_error = str(e)
-        logger.warning(f"Failed to initialize database connection: {e}")
-        return None
+        return result
 
 
 async def _init_redis_connection(app: FastAPI):
     """Initialize Redis connection and update app state."""
-    try:
-        redis_connection = await Redis.from_url(REDIS_URL)
+
+    async def connect_redis():
+        client = Redis.from_url(REDIS_URL)
+        await client.ping()  # Verify connection
+        return client
+
+    result = await connect_with_retry(
+        connect_redis,
+        "Redis",
+        max_retries=CONNECTION_MAX_RETRIES,
+        initial_backoff=CONNECTION_INITIAL_BACKOFF,
+    )
+    if isinstance(result, tuple):
+        _, error = result
+        app.state.redis_error = str(error)
+        logger.warning(f"Failed to initialize Redis connection: {error}")
+        return None
+    else:
         logger.info("Redis connection initialized")
         app.state.redis_ready = True
-        return redis_connection
-    except Exception as e:
-        app.state.redis_error = str(e)
+        return result
 
 
 @asynccontextmanager
@@ -119,6 +142,7 @@ async def liveness_check() -> dict:
     Returns 200 if the application process is running.
     Does not check external dependencies - only verifies the app is alive.
     """
+    logger.info("Liveness check: OK")
     return {"status": "ok"}
 
 

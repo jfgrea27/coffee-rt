@@ -7,6 +7,7 @@ from datetime import datetime
 from psycopg import AsyncConnection, OperationalError
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
+from shared.logger import setup_logging
 
 from cafe_order_aggregator.aggregator import (
     compute_hourly_metrics,
@@ -20,12 +21,10 @@ from cafe_order_aggregator.db.queries import (
     get_orders_last_30_days,
     get_recent_orders,
 )
-from cafe_order_aggregator.env import DATABASE_URL, REDIS_URL
+from cafe_order_aggregator.env import DATABASE_URL, LOG_FILE, REDIS_URL
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+setup_logging(LOG_FILE)
+
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
@@ -133,5 +132,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
     main()

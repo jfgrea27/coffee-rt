@@ -10,6 +10,7 @@ interface UseDashboardWebSocketResult {
   data: DashboardData | null;
   status: ConnectionStatus;
   error: string | null;
+  lastUpdated: number | null;
   reconnect: () => void;
 }
 
@@ -24,6 +25,7 @@ export function useDashboardWebSocket(
   const [data, setData] = useState<DashboardData | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
@@ -48,6 +50,7 @@ export function useDashboardWebSocket(
       try {
         const dashboardData: DashboardData = JSON.parse(event.data);
         setData(dashboardData);
+        setLastUpdated(Date.now());
       } catch {
         console.error('Failed to parse WebSocket message');
       }
@@ -94,5 +97,5 @@ export function useDashboardWebSocket(
     };
   }, [connect]);
 
-  return { data, status, error, reconnect };
+  return { data, status, error, lastUpdated, reconnect };
 }

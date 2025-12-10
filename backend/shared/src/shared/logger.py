@@ -1,4 +1,4 @@
-"""Logging configuration for FastAPI services."""
+"""Logging configuration for Coffee RT services."""
 
 import json
 import logging
@@ -44,7 +44,7 @@ def setup_logging(log_file: str) -> None:
     - File handler with JSON structured logging
 
     Args:
-        log_file: Path to the log file (default: logs/trader.log)
+        log_file: Path to the log file
     """
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
@@ -79,12 +79,18 @@ def setup_logging(log_file: str) -> None:
     logger.info(f"Logging configured - File: {log_file}")
 
 
-def get_uvicorn_config() -> dict:
+def get_uvicorn_config(log_file: str = "logs/api.log") -> dict:
     """
     Get Uvicorn logging configuration.
 
     Uses the same formatters as setup_logging
         - suppresses console output but logs to file with JSON format.
+
+    Args:
+        log_file: Path to the log file
+
+    Returns:
+        Uvicorn logging configuration dictionary
     """
     return {
         "version": 1,
@@ -106,7 +112,7 @@ def get_uvicorn_config() -> dict:
                 "class": "logging.FileHandler",
                 "level": "DEBUG",
                 "formatter": "json",
-                "filename": "logs/trader.log",
+                "filename": log_file,
             },
         },
         "loggers": {

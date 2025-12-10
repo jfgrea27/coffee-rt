@@ -1,3 +1,7 @@
+# Colima profile (set via COLIMA_PROFILE env var)
+colima_profile := env_var_or_default("COLIMA_PROFILE", "default")
+colima := "colima --profile " + colima_profile
+
 dev-setup:
     uv pip install -e ".[dev,lint,test]"
     # pre-commit
@@ -13,15 +17,11 @@ format:
 
 # external services (for local dev with containerd)
 nerdctl-external-services:
-    colima nerdctl -- compose down -v
-    colima nerdctl -- compose up --build postgres db-migrate redis redis-init
+    {{colima}} nerdctl -- compose down -v
+    {{colima}} nerdctl -- compose up --build postgres db-migrate redis redis-init
 
 nerdctl-external-services-down:
-    colima nerdctl -- compose down -v
-
-integration-test:
-    .dev/integration_test/script.sh
-
+    {{colima}} nerdctl -- compose down -v
 connect_db:
     PGPASSWORD=coffee-rt_password psql -h localhost -p 5432 -U coffee-rt -d coffee-rt
 
@@ -71,27 +71,27 @@ coverage-all:
 
 
 nerdctl-up:
-    colima nerdctl -- compose up --build
+    {{colima}} nerdctl -- compose up --build
 
 nerdctl-down:
-    colima nerdctl -- compose down -v
+    {{colima}} nerdctl -- compose down -v
 
 helm-build-images:
-    colima nerdctl -- build -t coffee-rt/cafe-order-api:latest -f backend/cafe_order_api/Dockerfile .
-    colima nerdctl -- build -t coffee-rt/cafe-order-aggregator:latest -f backend/cafe_order_aggregator/Dockerfile.cron .
-    colima nerdctl -- build -t coffee-rt/cafe-dashboard:latest -f frontend/Dockerfile frontend/
+    {{colima}} nerdctl -- build -t coffee-rt/cafe-order-api:latest -f backend/cafe_order_api/Dockerfile .
+    {{colima}} nerdctl -- build -t coffee-rt/cafe-order-aggregator:latest -f backend/cafe_order_aggregator/Dockerfile.cron .
+    {{colima}} nerdctl -- build -t coffee-rt/cafe-dashboard:latest -f frontend/Dockerfile frontend/
 
 helm-import-images: helm-build-images
-    colima nerdctl -- save coffee-rt/cafe-order-api:latest | colima nerdctl -- -n k8s.io load
-    colima nerdctl -- save coffee-rt/cafe-order-aggregator:latest | colima nerdctl -- -n k8s.io load
-    colima nerdctl -- save coffee-rt/cafe-dashboard:latest | colima nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/cafe-order-api:latest | {{colima}} nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/cafe-order-aggregator:latest | {{colima}} nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/cafe-dashboard:latest | {{colima}} nerdctl -- -n k8s.io load
 
 helm-list-images:
-    colima nerdctl -- -n k8s.io images | grep -E "coffee-rt|redis|postgresql"
+    {{colima}} nerdctl -- -n k8s.io images | grep -E "coffee-rt|redis|postgresql"
 
 helm-pull-external-images:
-    colima nerdctl -- -n k8s.io pull bitnami/redis:latest
-    colima nerdctl -- -n k8s.io pull bitnami/postgresql:latest
+    {{colima}} nerdctl -- -n k8s.io pull bitnami/redis:latest
+    {{colima}} nerdctl -- -n k8s.io pull bitnami/postgresql:latest
 
 helm-dep-update:
     cd helm/coffee-rt && helm dependency update
@@ -114,3 +114,7 @@ helm-uninstall:
 helm-deploy: helm-import-images helm-pull-external-images helm-dep-update
     kubectl create namespace coffee-ns --dry-run=client -o yaml | kubectl apply -f -
     helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.dev.yaml -n coffee-ns
+
+
+load-test:
+    cd backend/coffee_consumer_simulator && uv run locust -f src/coffee_consumer_simulator/locustfile.py --host http://localhost:8005

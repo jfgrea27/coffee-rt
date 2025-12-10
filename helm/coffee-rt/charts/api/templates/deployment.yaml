@@ -64,6 +64,12 @@ spec:
               value: {{ include "api.redisHost" . | quote }}
             - name: REDIS_PORT
               value: {{ .Values.redis.port | quote }}
+            - name: DASHBOARD_UPDATE_INTERVAL
+              value: {{ .Values.dashboardUpdateInterval | quote }}
+            - name: CONNECTION_MAX_RETRIES
+              value: {{ .Values.connection.maxRetries | quote }}
+            - name: CONNECTION_INITIAL_BACKOFF
+              value: {{ .Values.connection.initialBackoff | quote }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}

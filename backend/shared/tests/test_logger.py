@@ -5,7 +5,7 @@ import logging
 import tempfile
 from pathlib import Path
 
-from cafe_order_api.logger import JSONFormatter, get_uvicorn_config, setup_logging
+from shared.logger import JSONFormatter, get_uvicorn_config, setup_logging
 
 
 class TestJSONFormatter:

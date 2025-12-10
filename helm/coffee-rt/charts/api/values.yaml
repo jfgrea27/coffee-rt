@@ -88,3 +88,12 @@ database:
 redis:
   host: ""
   port: 6379
+
+
+# Dashboard update interval
+dashboardUpdateInterval: 30
+
+# Connection retry configuration
+connection:
+  maxRetries: 3
+  initialBackoff: 1.0

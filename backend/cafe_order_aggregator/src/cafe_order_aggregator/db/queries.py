@@ -81,14 +81,15 @@ async def get_orders_last_30_days(db: AsyncConnection) -> list[CoffeeOrder]:
     ]
 
 
-async def get_recent_orders(db: AsyncConnection) -> list[CoffeeOrder]:
-    """Get orders from the last hour.
+async def get_recent_orders(db: AsyncConnection, limit: int = 50) -> list[CoffeeOrder]:
+    """Get most recent orders from the last hour.
 
     Args:
         db: Database connection
+        limit: Maximum number of orders to return (default 50)
 
     Returns:
-        List of orders from the last hour
+        List of most recent orders from the last hour
     """
     cutoff = datetime.now() - timedelta(hours=1)
 
@@ -99,8 +100,9 @@ async def get_recent_orders(db: AsyncConnection) -> list[CoffeeOrder]:
             FROM {POSTGRES_SCHEMA}.orders
             WHERE timestamp >= %s
             ORDER BY timestamp DESC
+            LIMIT %s
             """,
-            (cutoff,),
+            (cutoff, limit),
         )
         rows = await cur.fetchall()
 

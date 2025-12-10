@@ -6,11 +6,10 @@ import logging
 from fastapi import WebSocket, WebSocketDisconnect
 from redis.asyncio import Redis
 
+from cafe_order_api.env import DASHBOARD_UPDATE_INTERVAL
 from cafe_order_api.handlers.dashboard import get_dashboard
 
 logger = logging.getLogger(__name__)
-
-DASHBOARD_UPDATE_INTERVAL = 30  # seconds
 
 
 async def dashboard_websocket_handler(websocket: WebSocket, redis: Redis):
@@ -28,7 +27,9 @@ async def dashboard_websocket_handler(websocket: WebSocket, redis: Redis):
     try:
         while True:
             # Fetch and send dashboard data
+            logger.info("Fetching dashboard data")
             dashboard_data = await get_dashboard(redis)
+            logger.info("Sending dashboard data")
             await websocket.send_json(dashboard_data.model_dump())
 
             # Wait for next update interval

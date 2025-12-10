@@ -164,16 +164,36 @@ class TestGetRecentOrders:
 
     @pytest.mark.asyncio
     async def test_get_recent_orders_query(self, mock_db_with_results):
-        """Test that query uses 1 hour cutoff."""
+        """Test that query uses 1 hour cutoff and default limit of 50."""
         mock_conn, mock_cursor = mock_db_with_results([])
 
         await get_recent_orders(mock_conn)
 
         mock_cursor.execute.assert_called_once()
         call_args = mock_cursor.execute.call_args[0]
+        query = call_args[0]
         params = call_args[1]
+
+        assert "LIMIT" in query
+        assert len(params) == 2  # cutoff and limit
 
         # Verify cutoff is approximately 1 hour ago
         cutoff = params[0]
         expected_cutoff = datetime.now() - timedelta(hours=1)
         assert abs((cutoff - expected_cutoff).total_seconds()) < 5
+
+        # Verify default limit is 50
+        assert params[1] == 50
+
+    @pytest.mark.asyncio
+    async def test_get_recent_orders_custom_limit(self, mock_db_with_results):
+        """Test that custom limit is passed to query."""
+        mock_conn, mock_cursor = mock_db_with_results([])
+
+        await get_recent_orders(mock_conn, limit=25)
+
+        mock_cursor.execute.assert_called_once()
+        call_args = mock_cursor.execute.call_args[0]
+        params = call_args[1]
+
+        assert params[1] == 25

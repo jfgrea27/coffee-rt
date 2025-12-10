@@ -2,6 +2,9 @@
 
 import os
 
+# Logging configuration
+LOG_FILE = os.getenv("LOG_FILE", "logs/aggregator.log")
+
 # Database configuration
 POSTGRES_USER = os.getenv("POSTGRES_USER", "coffee-rt")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "coffee-rt_password")

@@ -9,6 +9,7 @@ APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 
 LOG_FILE = os.getenv("LOG_FILE", "logs/cafe_order_api.log")
 
+DASHBOARD_UPDATE_INTERVAL = int(os.getenv("DASHBOARD_UPDATE_INTERVAL", 30))  # seconds
 
 # Database configuration
 POSTGRES_USER = os.getenv("POSTGRES_USER", "coffee-rt")
@@ -27,3 +28,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 REDIS_URL_SANITIZED = f"redis://********:********@{REDIS_HOST}:{REDIS_PORT}"
+
+# Connection retry configuration
+CONNECTION_MAX_RETRIES = int(os.getenv("CONNECTION_MAX_RETRIES", "3"))
+CONNECTION_INITIAL_BACKOFF = float(os.getenv("CONNECTION_INITIAL_BACKOFF", "1.0"))

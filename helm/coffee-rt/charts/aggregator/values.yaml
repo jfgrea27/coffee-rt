@@ -1,5 +1,6 @@
 # Default values for aggregator.
-schedule: "* * * * *"  # Every minute
+# CronJob runs every minute, but loops internally to execute every 10 seconds
+schedule: "* * * * *"
 
 image:
   repository: coffee-rt/cafe-order-aggregator
@@ -52,3 +53,7 @@ database:
 redis:
   host: ""
   port: 6379
+
+# Logging configuration
+logging:
+  file: /app/logs/aggregator.log

@@ -82,6 +82,10 @@ services:
       POSTGRES_SCHEMA: coffee_rt
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      LOG_FILE: /app/logs/api.log
+      DASHBOARD_UPDATE_INTERVAL: 10
+      CONNECTION_MAX_RETRIES: 3
+      CONNECTION_INITIAL_BACKOFF: 1.0
     networks:
       - coffee-rt
 
@@ -115,6 +119,7 @@ services:
       POSTGRES_SCHEMA: coffee_rt
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      LOG_FILE: /app/logs/aggregator.log
     networks:
       - coffee-rt
     restart: unless-stopped

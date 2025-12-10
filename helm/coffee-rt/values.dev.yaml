@@ -30,6 +30,10 @@ api:
       cpu: 100m
       memory: 128Mi
 
+
+  dashboardUpdateInterval: 10
+
+
 aggregator:
   enabled: true
   schedule: "* * * * *"  # Every minute
