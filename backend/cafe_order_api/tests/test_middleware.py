@@ -13,8 +13,12 @@ def app_with_middleware():
     app = FastAPI()
     app.add_middleware(ServiceHealthMiddleware)
 
-    @app.get("/health")
+    @app.get("/livez")
     async def health():
+        return {"status": "ok"}
+
+    @app.get("/readyz")
+    async def readyz():
         return {"status": "ok"}
 
     @app.get("/")
@@ -41,13 +45,13 @@ def app_with_middleware():
 class TestServiceHealthMiddleware:
     """Tests for ServiceHealthMiddleware."""
 
-    def test_health_endpoint_always_accessible(self, app_with_middleware):
-        """Test that /health endpoint works even when services are down."""
+    def test_livez_endpoint_always_accessible(self, app_with_middleware):
+        """Test that /livez endpoint works even when services are down."""
         app_with_middleware.state.db_ready = False
         app_with_middleware.state.redis_ready = False
 
         client = TestClient(app_with_middleware)
-        response = client.get("/health")
+        response = client.get("/livez")
 
         assert response.status_code == 200
 

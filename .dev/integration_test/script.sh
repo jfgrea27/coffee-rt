@@ -60,7 +60,7 @@ RETRY_COUNT=0
 
 # Wait for cafe-order-api to be healthy
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s http://localhost:8005/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8005/readyz > /dev/null 2>&1; then
         log_info "cafe-order-api is healthy"
         break
     fi
@@ -75,7 +75,7 @@ done
 
 # Test 1: Health check
 log_info "Test 1: Checking health endpoint..."
-HEALTH_RESPONSE=$(curl -s http://localhost:8005/health)
+HEALTH_RESPONSE=$(curl -s http://localhost:8005/readyz)
 if echo "$HEALTH_RESPONSE" | grep -q '"status":"ok"'; then
     log_info "Health check passed"
 else

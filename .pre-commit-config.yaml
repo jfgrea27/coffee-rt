@@ -17,8 +17,10 @@ repos:
         name: Trim trailing whitespace
       - id: end-of-file-fixer
         name: Fix end of file
+        exclude: tsconfig\.tsbuildinfo$
       - id: check-yaml
         name: Check YAML syntax
+        exclude: ^helm/.*/templates/
       - id: check-json
         name: Check JSON syntax
       - id: check-toml
@@ -36,7 +38,14 @@ repos:
     hooks:
       - id: frontend-typecheck
         name: Frontend TypeScript check
-        entry: bash -c 'cd frontend && npm run build -- --noEmit || npx tsc --noEmit'
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
         language: system
         files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: helm-lint
+        name: Helm lint
+        entry: bash -c 'cd helm/coffee-rt && helm dependency update && helm lint . -f values.dev.yaml'
+        language: system
+        files: ^helm/
         pass_filenames: false

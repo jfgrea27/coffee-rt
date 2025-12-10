@@ -1,0 +1,5 @@
+Coffee RT Frontend has been deployed.
+
+To access the dashboard:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "frontend.fullname" . }} 8080:{{ .Values.service.port }}
+  echo "Visit http://127.0.0.1:8080 to access the dashboard"

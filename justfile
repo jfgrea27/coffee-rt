@@ -11,13 +11,13 @@ format:
     ruff check . --fix
 
 
-# external services
-docker-external-services:
-    docker compose down -v
-    docker compose up --build postgres db-migrate redis redis-init
+# external services (for local dev with containerd)
+nerdctl-external-services:
+    colima nerdctl -- compose down -v
+    colima nerdctl -- compose up --build postgres db-migrate redis redis-init
 
-docker-external-services-down:
-    docker compose down -v
+nerdctl-external-services-down:
+    colima nerdctl -- compose down -v
 
 integration-test:
     .dev/integration_test/script.sh
@@ -70,8 +70,47 @@ coverage-all:
     cd frontend && npm test -- --coverage
 
 
-docker-up:
-    docker compose up --build
+nerdctl-up:
+    colima nerdctl -- compose up --build
 
-docker-down:
-    docker compose down -v
+nerdctl-down:
+    colima nerdctl -- compose down -v
+
+helm-build-images:
+    colima nerdctl -- build -t coffee-rt/cafe-order-api:latest -f backend/cafe_order_api/Dockerfile .
+    colima nerdctl -- build -t coffee-rt/cafe-order-aggregator:latest -f backend/cafe_order_aggregator/Dockerfile.cron .
+    colima nerdctl -- build -t coffee-rt/cafe-dashboard:latest -f frontend/Dockerfile frontend/
+
+helm-import-images: helm-build-images
+    colima nerdctl -- save coffee-rt/cafe-order-api:latest | colima nerdctl -- -n k8s.io load
+    colima nerdctl -- save coffee-rt/cafe-order-aggregator:latest | colima nerdctl -- -n k8s.io load
+    colima nerdctl -- save coffee-rt/cafe-dashboard:latest | colima nerdctl -- -n k8s.io load
+
+helm-list-images:
+    colima nerdctl -- -n k8s.io images | grep -E "coffee-rt|redis|postgresql"
+
+helm-pull-external-images:
+    colima nerdctl -- -n k8s.io pull bitnami/redis:latest
+    colima nerdctl -- -n k8s.io pull bitnami/postgresql:latest
+
+helm-dep-update:
+    cd helm/coffee-rt && helm dependency update
+
+helm-lint:
+    cd helm/coffee-rt && helm lint . -f values.dev.yaml
+
+helm-template:
+    cd helm/coffee-rt && helm template coffee-rt . -f values.dev.yaml
+
+helm-install: helm-dep-update
+    helm install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.dev.yaml
+
+helm-upgrade:
+    helm upgrade coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.dev.yaml
+
+helm-uninstall:
+    helm uninstall coffee-rt
+
+helm-deploy: helm-import-images helm-pull-external-images helm-dep-update
+    kubectl create namespace coffee-ns --dry-run=client -o yaml | kubectl apply -f -
+    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.dev.yaml -n coffee-ns

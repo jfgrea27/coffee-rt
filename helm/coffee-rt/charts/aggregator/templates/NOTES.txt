@@ -1,0 +1,9 @@
+Coffee RT Aggregator has been deployed as a CronJob.
+
+Schedule: {{ .Values.schedule }}
+
+To check the CronJob status:
+  kubectl get cronjob {{ include "aggregator.fullname" . }}
+
+To see recent jobs:
+  kubectl get jobs -l app.kubernetes.io/instance={{ .Release.Name }}

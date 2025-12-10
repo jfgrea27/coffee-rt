@@ -1,0 +1,120 @@
+# Development values for Coffee RT
+# Usage: helm install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.dev.yaml
+#
+# For local development with locally built images, use imagePullPolicy: Never
+# Build images locally first:
+#   docker build -t coffee-rt/cafe-order-api:latest ./backend/api
+#   docker build -t coffee-rt/cafe-order-aggregator:latest ./backend/aggregator
+#   docker build -t coffee-rt/cafe-dashboard:latest ./frontend
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# Enable all services
+api:
+  enabled: true
+  image:
+    repository: coffee-rt/cafe-order-api
+    tag: latest
+    pullPolicy: Never  # Use local images
+  service:
+    type: ClusterIP
+    port: 8005
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+aggregator:
+  enabled: true
+  schedule: "* * * * *"  # Every minute
+  image:
+    repository: coffee-rt/cafe-order-aggregator
+    tag: latest
+    pullPolicy: Never  # Use local images
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+frontend:
+  enabled: true
+  image:
+    repository: coffee-rt/cafe-dashboard
+    tag: latest
+    pullPolicy: Never  # Use local images
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Database configuration for secret creation
+database:
+  password: coffee-rt_password
+
+# PostgreSQL subchart configuration (Bitnami)
+postgresql:
+  enabled: true
+  image:
+    tag: latest
+    pullPolicy: IfNotPresent
+  auth:
+    username: coffee-rt
+    password: coffee-rt_password
+    database: coffee-rt
+  primary:
+    initdb:
+      scripts:
+        init-schema.sql: |
+          CREATE SCHEMA IF NOT EXISTS coffee_rt;
+
+          DO $$ BEGIN
+              CREATE TYPE coffee_rt.drink AS ENUM ('cappuccino', 'americano', 'latte');
+          EXCEPTION
+              WHEN duplicate_object THEN null;
+          END $$;
+
+          DO $$ BEGIN
+              CREATE TYPE coffee_rt.store AS ENUM ('uptown', 'downtown', 'central', 'southend');
+          EXCEPTION
+              WHEN duplicate_object THEN null;
+          END $$;
+
+          CREATE TABLE IF NOT EXISTS coffee_rt.orders (
+              id SERIAL PRIMARY KEY,
+              drink coffee_rt.drink NOT NULL,
+              store coffee_rt.store NOT NULL,
+              price NUMERIC(10, 2) NOT NULL,
+              timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Redis subchart configuration (Bitnami)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  image:
+    tag: latest
+    pullPolicy: IfNotPresent
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi

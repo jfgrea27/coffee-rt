@@ -1,0 +1,18 @@
+dependencies:
+- name: api
+  repository: ""
+  version: 0.1.0
+- name: aggregator
+  repository: ""
+  version: 0.1.0
+- name: frontend
+  repository: ""
+  version: 0.1.0
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.4.1
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 20.6.2
+digest: sha256:d3f7a8acf2cd4e85afe6abe339a918b7c8d2cd634248dcdc16ff6ac906a2b34d
+generated: "2025-12-09T22:51:49.587695Z"

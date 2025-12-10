@@ -79,4 +79,5 @@ uv run locust -f src/coffee_consumer_simulator/locustfile.py \
 
 - `POST /api/order` - Create coffee orders
 - `GET /api/dashboard` - Fetch dashboard metrics
-- `GET /health` - Health check
+- `GET /ready` - Readiness
+- `GET /livez` - Liveness

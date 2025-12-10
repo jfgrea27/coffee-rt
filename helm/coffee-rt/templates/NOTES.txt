@@ -1,0 +1,37 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+{{- if .Values.frontend.enabled }}
+
+To access the Coffee RT dashboard:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ .Release.Name }}-frontend 8080:{{ .Values.frontend.service.port | default 80 }}
+  echo "Visit http://127.0.0.1:8080 to access the dashboard"
+{{- end }}
+
+{{- if .Values.api.enabled }}
+
+API endpoint (internal):
+  {{ .Release.Name }}-api:{{ .Values.api.service.port | default 8005 }}
+{{- end }}
+
+{{- if .Values.aggregator.enabled }}
+
+Aggregator CronJob:
+  Schedule: {{ .Values.aggregator.schedule | default "* * * * *" }}
+  Check jobs: kubectl get cronjob {{ .Release.Name }}-aggregator
+{{- end }}
+
+{{- if .Values.postgresql.enabled }}
+
+PostgreSQL:
+  Host: {{ .Release.Name }}-postgresql
+  Port: 5432
+{{- end }}
+
+{{- if .Values.redis.enabled }}
+
+Redis:
+  Host: {{ .Release.Name }}-redis-master
+  Port: 6379
+{{- end }}

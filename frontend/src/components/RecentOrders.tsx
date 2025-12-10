@@ -16,28 +16,30 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
       {orders.length === 0 ? (
         <p className="no-data">No recent orders</p>
       ) : (
-        <table className="orders-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Drink</th>
-              <th>Store</th>
-              <th>Price</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>{order.drink}</td>
-                <td>{order.store}</td>
-                <td>${order.price.toFixed(2)}</td>
-                <td>{formatTimestamp(order.timestamp)}</td>
+        <div className="orders-container">
+          <table className="orders-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Drink</th>
+                <th>Store</th>
+                <th>Price</th>
+                <th>Time</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>{order.id}</td>
+                  <td>{order.drink}</td>
+                  <td>{order.store}</td>
+                  <td>${order.price.toFixed(2)}</td>
+                  <td>{formatTimestamp(order.timestamp)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -17,7 +17,15 @@ class ServiceHealthMiddleware(BaseHTTPMiddleware):
         Skips health and root endpoints to allow monitoring even when services are down.
         """
         # Allow health check and root endpoints to pass through
-        if request.url.path in ["/health", "/", "/docs", "/openapi.json", "/redoc"]:
+        if request.url.path in [
+            "/livez",
+            "/readyz",
+            "/health",
+            "/",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+        ]:
             return await call_next(request)
 
         # For all other routes, check service availability

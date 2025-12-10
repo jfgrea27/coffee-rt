@@ -1,0 +1,38 @@
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# API Service subchart
+api:
+  enabled: true
+
+# Aggregator CronJob subchart
+aggregator:
+  enabled: true
+
+# Frontend subchart
+frontend:
+  enabled: true
+
+# Database configuration (shared across subcharts)
+database:
+  host: ""  # Leave empty to use subchart default
+  port: 5432
+  name: coffee-rt
+  user: coffee-rt
+  schema: coffee_rt
+  password: ""  # Set via existingSecret or values.dev.yaml
+
+# Redis configuration (shared across subcharts)
+redisConfig:
+  host: ""  # Leave empty to use subchart default
+  port: 6379
+
+# PostgreSQL subchart configuration
+postgresql:
+  enabled: false
+
+# Redis subchart configuration
+redis:
+  enabled: false

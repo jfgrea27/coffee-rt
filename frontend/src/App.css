@@ -145,6 +145,11 @@ body {
 }
 
 /* Recent Orders */
+.recent-orders .orders-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 .orders-table {
   width: 100%;
   border-collapse: collapse;

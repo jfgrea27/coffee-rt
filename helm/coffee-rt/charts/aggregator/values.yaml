@@ -1,0 +1,54 @@
+# Default values for aggregator.
+schedule: "* * * * *"  # Every minute
+
+image:
+  repository: coffee-rt/cafe-order-aggregator
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+concurrencyPolicy: Forbid
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Database configuration
+database:
+  host: ""
+  port: 5432
+  name: coffee-rt
+  user: coffee-rt
+  schema: coffee_rt
+  secretName: ""
+
+# Redis configuration
+redis:
+  host: ""
+  port: 6379

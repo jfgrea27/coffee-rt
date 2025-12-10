@@ -4,8 +4,9 @@ import asyncio
 import logging
 from datetime import datetime
 
-from psycopg import AsyncConnection
+from psycopg import AsyncConnection, OperationalError
 from redis.asyncio import Redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from cafe_order_aggregator.aggregator import (
     compute_hourly_metrics,
@@ -27,18 +28,71 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+MAX_RETRIES = 3
+INITIAL_BACKOFF_SECONDS = 1
+
+
+async def connect_with_retry(
+    connect_fn,
+    service_name: str,
+    max_retries: int = MAX_RETRIES,
+    initial_backoff: float = INITIAL_BACKOFF_SECONDS,
+):
+    """Connect to a service with exponential backoff retry.
+
+    Args:
+        connect_fn: Async function that returns a connection
+        service_name: Name of the service for logging
+        max_retries: Maximum number of retry attempts
+        initial_backoff: Initial backoff time in seconds
+
+    Returns:
+        Connection object
+
+    Raises:
+        Exception: If all retries are exhausted
+    """
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return await connect_fn()
+        except (OperationalError, RedisConnectionError, OSError) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                backoff = initial_backoff * (2**attempt)
+                logger.warning(
+                    f"Failed to connect to {service_name} "
+                    f"(attempt {attempt + 1}/{max_retries}): {e}. "
+                    f"Retrying in {backoff}s..."
+                )
+                await asyncio.sleep(backoff)
+            else:
+                logger.error(
+                    f"Failed to connect to {service_name} after {max_retries} attempts: {e}"
+                )
+    raise last_exception
+
 
 async def run_aggregation() -> None:
     """Run all aggregation tasks and update Redis cache."""
     logger.info("Starting aggregation job")
 
-    # Connect to database
+    # Connect to database with retry
     logger.info("Connecting to database...")
-    db = await AsyncConnection.connect(DATABASE_URL)
+    db = await connect_with_retry(
+        lambda: AsyncConnection.connect(DATABASE_URL),
+        "database",
+    )
 
-    # Connect to Redis
+    # Connect to Redis with retry
     logger.info("Connecting to Redis...")
-    redis = Redis.from_url(REDIS_URL)
+
+    async def connect_redis():
+        client = Redis.from_url(REDIS_URL)
+        await client.ping()  # Verify connection
+        return client
+
+    redis = await connect_with_retry(connect_redis, "Redis")
 
     try:
         # 1. Update hourly metrics for current hour
@@ -79,4 +133,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    main()
     main()

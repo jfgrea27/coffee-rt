@@ -1,0 +1,8 @@
+Coffee RT API has been deployed.
+
+API endpoint (internal):
+  {{ include "api.fullname" . }}:{{ .Values.service.port }}
+
+To access the API from localhost:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "api.fullname" . }} 8005:{{ .Values.service.port }}
+  echo "API available at http://127.0.0.1:8005"

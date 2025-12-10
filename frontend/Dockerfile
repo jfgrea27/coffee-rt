@@ -13,7 +13,10 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+ENV API_HOST=cafe-order-api
+ENV API_PORT=8005
 
 EXPOSE 80
 

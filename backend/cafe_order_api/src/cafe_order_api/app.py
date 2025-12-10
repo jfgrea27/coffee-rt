@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request, WebSocket
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from psycopg import AsyncConnection
 from redis.asyncio import Redis
 
@@ -111,15 +111,27 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
 app.add_middleware(ServiceHealthMiddleware)
 
 
-@app.get("/health")
-async def health_check() -> HealthResponse:
+@app.get("/livez")
+async def liveness_check() -> dict:
     """
-    Health check endpoint.
+    Liveness probe endpoint.
+
+    Returns 200 if the application process is running.
+    Does not check external dependencies - only verifies the app is alive.
+    """
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readiness_check() -> HealthResponse:
+    """
+    Readiness probe endpoint.
 
     Returns detailed status of all connections and services.
-    Service is considered healthy if it's running, even if connections are down.
+    Returns 503 if the service is not ready to accept traffic.
     """
-    return HealthResponse(
+
+    res = HealthResponse(
         status="ok",
         service=APP_TITLE,
         version=APP_VERSION,
@@ -136,6 +148,14 @@ async def health_check() -> HealthResponse:
             },
         },
     )
+    logger.info(f"Readiness check: {res.model_dump_json()}")
+
+    if not app.state.db_ready or app.state.db_error:
+        raise HTTPException(status_code=503, detail="Database connection not available")
+    if not app.state.redis_ready or app.state.redis_error:
+        raise HTTPException(status_code=503, detail="Redis connection not available")
+
+    return res
 
 
 @app.post("/api/order")
@@ -176,5 +196,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
     main()

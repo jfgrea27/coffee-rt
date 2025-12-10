@@ -78,7 +78,7 @@ class TestGetOrdersForHour:
         params = call_args[1]
 
         assert "SELECT" in query
-        assert "FROM orders" in query
+        assert "FROM coffee_rt.orders" in query
         assert "timestamp >=" in query
         assert "timestamp <" in query
         assert len(params) == 2  # start_time and end_time
