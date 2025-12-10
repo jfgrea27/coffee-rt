@@ -1,7 +1,7 @@
 """Dashboard handler for retrieving metrics from Redis."""
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 from redis.asyncio import Redis
 
@@ -17,7 +17,7 @@ async def get_dashboard(redis: Redis) -> DashboardResponse:
     Returns:
         DashboardResponse with current hour metrics, top 5 drinks, and recent orders
     """
-    current_hour = datetime.now().hour
+    current_hour = datetime.now(UTC).hour
 
     # Fetch all metrics from Redis
     hourly_data = await redis.get(f"metrics:hourly:{current_hour}")
@@ -50,4 +50,5 @@ async def get_dashboard(redis: Redis) -> DashboardResponse:
         current_hour=current_hour_metrics,
         top5_drinks=top5_drinks,
         recent_orders=recent_orders,
+        server_timestamp=datetime.now(UTC),
     )

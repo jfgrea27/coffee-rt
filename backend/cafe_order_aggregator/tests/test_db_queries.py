@@ -1,6 +1,6 @@
 """Tests for database queries."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -129,9 +129,9 @@ class TestGetOrdersLast30Days:
         assert "timestamp >=" in query
         assert len(params) == 1
 
-        # Verify cutoff is approximately 30 days ago
+        # Verify cutoff is approximately 30 days ago (UTC)
         cutoff = params[0]
-        expected_cutoff = datetime.now() - timedelta(days=30)
+        expected_cutoff = datetime.now(UTC) - timedelta(days=30)
         assert abs((cutoff - expected_cutoff).total_seconds()) < 5
 
 
@@ -177,9 +177,9 @@ class TestGetRecentOrders:
         assert "LIMIT" in query
         assert len(params) == 2  # cutoff and limit
 
-        # Verify cutoff is approximately 1 hour ago
+        # Verify cutoff is approximately 1 hour ago (UTC)
         cutoff = params[0]
-        expected_cutoff = datetime.now() - timedelta(hours=1)
+        expected_cutoff = datetime.now(UTC) - timedelta(hours=1)
         assert abs((cutoff - expected_cutoff).total_seconds()) < 5
 
         # Verify default limit is 50

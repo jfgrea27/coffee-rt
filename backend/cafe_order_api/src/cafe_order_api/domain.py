@@ -1,5 +1,7 @@
 """Domain models for the cafe order API."""
 
+from datetime import datetime
+
 from pydantic import BaseModel
 from shared import CoffeeOrder
 
@@ -50,3 +52,4 @@ class DashboardResponse(BaseModel):
     current_hour: HourlyMetrics | None
     top5_drinks: list[str]
     recent_orders: list[RecentOrder]
+    server_timestamp: datetime

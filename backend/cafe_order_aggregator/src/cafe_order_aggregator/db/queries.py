@@ -1,6 +1,6 @@
 """Database queries for order aggregation."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from psycopg import AsyncConnection
 from shared import CoffeeOrder, Drink, Store
@@ -9,17 +9,17 @@ from cafe_order_aggregator.env import POSTGRES_SCHEMA
 
 
 async def get_orders_for_hour(db: AsyncConnection, hour: int) -> list[CoffeeOrder]:
-    """Get all orders for a specific hour today.
+    """Get all orders for a specific hour today (UTC).
 
     Args:
         db: Database connection
-        hour: Hour of the day (0-23)
+        hour: Hour of the day (0-23) in UTC
 
     Returns:
         List of orders for the specified hour
     """
-    today = datetime.now().date()
-    start_time = datetime.combine(today, datetime.min.time().replace(hour=hour))
+    today = datetime.now(UTC).date()
+    start_time = datetime.combine(today, datetime.min.time().replace(hour=hour), tzinfo=UTC)
     end_time = start_time + timedelta(hours=1)
 
     async with db.cursor() as cur:
@@ -55,7 +55,7 @@ async def get_orders_last_30_days(db: AsyncConnection) -> list[CoffeeOrder]:
     Returns:
         List of orders from the last 30 days
     """
-    cutoff = datetime.now() - timedelta(days=30)
+    cutoff = datetime.now(UTC) - timedelta(days=30)
 
     async with db.cursor() as cur:
         await cur.execute(
@@ -91,7 +91,7 @@ async def get_recent_orders(db: AsyncConnection, limit: int = 50) -> list[Coffee
     Returns:
         List of most recent orders from the last hour
     """
-    cutoff = datetime.now() - timedelta(hours=1)
+    cutoff = datetime.now(UTC) - timedelta(hours=1)
 
     async with db.cursor() as cur:
         await cur.execute(

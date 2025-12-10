@@ -1,8 +1,15 @@
+import { memo } from 'react';
+
 interface TopDrinksProps {
   drinks: string[];
 }
 
-export function TopDrinks({ drinks }: TopDrinksProps) {
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => item === b[index]);
+}
+
+export const TopDrinks = memo(function TopDrinks({ drinks }: TopDrinksProps) {
   return (
     <div className="dashboard-card top-drinks">
       <h2>Top 5 Drinks (Last 30 Days)</h2>
@@ -20,4 +27,4 @@ export function TopDrinks({ drinks }: TopDrinksProps) {
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => arraysEqual(prevProps.drinks, nextProps.drinks));

@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import type { HourlyMetrics as HourlyMetricsType } from '../types/dashboard';
 
 interface HourlyMetricsProps {
   metrics: HourlyMetricsType | null;
 }
 
-export function HourlyMetrics({ metrics }: HourlyMetricsProps) {
+export const HourlyMetrics = memo(function HourlyMetrics({ metrics }: HourlyMetricsProps) {
   if (!metrics) {
     return (
       <div className="dashboard-card hourly-metrics">
@@ -37,4 +38,4 @@ export function HourlyMetrics({ metrics }: HourlyMetricsProps) {
       </div>
     </div>
   );
-}
+});

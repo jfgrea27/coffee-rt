@@ -1,10 +1,16 @@
+import { memo } from 'react';
 import type { RecentOrder } from '../types/dashboard';
 
 interface RecentOrdersProps {
   orders: RecentOrder[];
 }
 
-export function RecentOrders({ orders }: RecentOrdersProps) {
+function ordersEqual(a: RecentOrder[], b: RecentOrder[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((order, index) => order.id === b[index].id);
+}
+
+export const RecentOrders = memo(function RecentOrders({ orders }: RecentOrdersProps) {
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -43,4 +49,4 @@ export function RecentOrders({ orders }: RecentOrdersProps) {
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => ordersEqual(prevProps.orders, nextProps.orders));

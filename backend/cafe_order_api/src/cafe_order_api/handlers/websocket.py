@@ -30,7 +30,7 @@ async def dashboard_websocket_handler(websocket: WebSocket, redis: Redis):
             logger.info("Fetching dashboard data")
             dashboard_data = await get_dashboard(redis)
             logger.info("Sending dashboard data")
-            await websocket.send_json(dashboard_data.model_dump())
+            await websocket.send_json(dashboard_data.model_dump(mode="json"))
 
             # Wait for next update interval
             await asyncio.sleep(DASHBOARD_UPDATE_INTERVAL)

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ConnectionStatus as ConnectionStatusType } from '../types/dashboard';
 
 interface ConnectionStatusProps {
@@ -6,7 +7,7 @@ interface ConnectionStatusProps {
   onReconnect: () => void;
 }
 
-export function ConnectionStatus({ status, error, onReconnect }: ConnectionStatusProps) {
+export const ConnectionStatus = memo(function ConnectionStatus({ status, error, onReconnect }: ConnectionStatusProps) {
   const getStatusColor = (): string => {
     switch (status) {
       case 'connected':
@@ -44,4 +45,4 @@ export function ConnectionStatus({ status, error, onReconnect }: ConnectionStatu
       )}
     </div>
   );
-}
+});

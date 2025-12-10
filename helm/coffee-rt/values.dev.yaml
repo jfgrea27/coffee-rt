@@ -15,6 +15,7 @@ global:
 # Enable all services
 api:
   enabled: true
+  replicaCount: 4
   image:
     repository: coffee-rt/cafe-order-api
     tag: latest

@@ -1,5 +1,6 @@
 """Tests for the /api/dashboard endpoint."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -44,6 +45,7 @@ class TestDashboardEndpoint:
                     timestamp="2025-12-09T10:30:00",
                 ),
             ],
+            server_timestamp=datetime.now(UTC),
         )
 
         with patch(
@@ -69,6 +71,7 @@ class TestDashboardEndpoint:
             current_hour=None,
             top5_drinks=[],
             recent_orders=[],
+            server_timestamp=datetime.now(UTC),
         )
 
         with patch(
@@ -90,6 +93,7 @@ class TestDashboardEndpoint:
             current_hour=None,
             top5_drinks=["cappuccino", "latte"],
             recent_orders=[],
+            server_timestamp=datetime.now(UTC),
         )
 
         with patch(

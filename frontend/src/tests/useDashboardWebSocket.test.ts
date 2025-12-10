@@ -111,6 +111,7 @@ describe('useDashboardWebSocket', () => {
       current_hour: { hour: 14, top_drinks: ['latte'], revenue: 100, order_count: 20 },
       top5_drinks: ['latte', 'cappuccino'],
       recent_orders: [],
+      server_timestamp: '2025-12-10T22:30:00+00:00',
     };
 
     await act(async () => {
@@ -122,6 +123,7 @@ describe('useDashboardWebSocket', () => {
     });
 
     expect(result.current.data).toEqual(mockData);
+    expect(result.current.serverTimestamp).toBe('2025-12-10T22:30:00+00:00');
   });
 
   it('sets error status on WebSocket error', async () => {

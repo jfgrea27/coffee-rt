@@ -17,6 +17,7 @@ export interface DashboardData {
   current_hour: HourlyMetrics | null;
   top5_drinks: string[];
   recent_orders: RecentOrder[];
+  server_timestamp: string;
 }
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';

@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from psycopg import AsyncConnection, OperationalError
 from redis.asyncio import Redis
@@ -94,8 +94,8 @@ async def run_aggregation() -> None:
     redis = await connect_with_retry(connect_redis, "Redis")
 
     try:
-        # 1. Update hourly metrics for current hour
-        current_hour = datetime.now().hour
+        # 1. Update hourly metrics for current hour (UTC)
+        current_hour = datetime.now(UTC).hour
         logger.info(f"Fetching orders for hour {current_hour}")
         hourly_orders = await get_orders_for_hour(db, current_hour)
         hourly_metrics = compute_hourly_metrics(hourly_orders)
