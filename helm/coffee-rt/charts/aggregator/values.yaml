@@ -17,8 +17,12 @@ serviceAccount:
   annotations: {}
   name: ""
 
-podAnnotations: {}
-podLabels: {}
+podAnnotations:
+  # Enable log collection by Promtail
+  prometheus.io/scrape: "false"  # CronJob doesn't expose metrics endpoint
+podLabels:
+  app.kubernetes.io/component: aggregator
+  monitoring: enabled
 
 podSecurityContext: {}
 

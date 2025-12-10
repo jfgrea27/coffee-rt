@@ -21,11 +21,11 @@ from cafe_order_aggregator.db.queries import (
     get_orders_last_30_days,
     get_recent_orders,
 )
-from cafe_order_aggregator.env import DATABASE_URL, LOG_FILE, REDIS_URL
+from cafe_order_aggregator.env import APP_TITLE, DATABASE_URL, LOG_FILE, REDIS_URL
 
 setup_logging(LOG_FILE)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(APP_TITLE)
 
 MAX_RETRIES = 3
 INITIAL_BACKOFF_SECONDS = 1

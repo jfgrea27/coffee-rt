@@ -45,11 +45,7 @@ spec:
                 - /bin/sh
                 - -c
                 - |
-                  for i in 0 1 2 3 4 5; do
-                    /bin/sh /app/run-aggregator.sh &
-                    sleep 10
-                  done
-                  wait
+                  cd /app/backend/cafe_order_aggregator && /usr/local/bin/uv run cafe-aggregator
               env:
                 - name: POSTGRES_HOST
                   value: {{ include "aggregator.databaseHost" . | quote }}

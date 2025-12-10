@@ -2,7 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from psycopg import AsyncConnection
 from redis.asyncio import Redis
 from shared import get_uvicorn_config, setup_logging
@@ -29,7 +30,8 @@ from cafe_order_api.env import (
 from cafe_order_api.handlers.dashboard import get_dashboard as handle_get_dashboard
 from cafe_order_api.handlers.orders import create_order as handle_create_order
 from cafe_order_api.handlers.websocket import dashboard_websocket_handler
-from cafe_order_api.middelware import ServiceHealthMiddleware
+from cafe_order_api.metrics import APP_INFO
+from cafe_order_api.middelware import MetricsMiddleware, ServiceHealthMiddleware
 from cafe_order_api.utils import connect_with_retry
 
 app = FastAPI()
@@ -38,7 +40,7 @@ app = FastAPI()
 setup_logging(LOG_FILE)
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(APP_TITLE)
 
 
 async def get_redis_connection(request: Request) -> Redis:
@@ -61,12 +63,14 @@ async def _init_db_connection(app: FastAPI):
     )
     if isinstance(result, tuple):
         _, error = result
+        app.state.db_ready = False
         app.state.db_error = str(error)
         logger.warning(f"Failed to initialize database connection: {error}")
         return None
     else:
         logger.info("Database connection initialized")
         app.state.db_ready = True
+        app.state.db_error = None
         return result
 
 
@@ -86,12 +90,14 @@ async def _init_redis_connection(app: FastAPI):
     )
     if isinstance(result, tuple):
         _, error = result
+        app.state.redis_ready = False
         app.state.redis_error = str(error)
         logger.warning(f"Failed to initialize Redis connection: {error}")
         return None
     else:
         logger.info("Redis connection initialized")
         app.state.redis_ready = True
+        app.state.redis_error = None
         return result
 
 
@@ -130,8 +136,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
 
-# Add middleware to check service availability
+# Set application info for Prometheus
+APP_INFO.info({"version": APP_VERSION, "title": APP_TITLE})
+
+# Add middleware (order matters
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(ServiceHealthMiddleware)
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/livez")
@@ -153,7 +169,34 @@ async def readiness_check() -> HealthResponse:
 
     Returns detailed status of all connections and services.
     Returns 503 if the service is not ready to accept traffic.
+
+    If connections are down, attempts to reconnect and update app state.
     """
+    # Attempt to reconnect to database if not ready
+    if not app.state.db_ready or app.state.db_error:
+        logger.info("Database connection not ready, attempting to reconnect...")
+        db_connection = await _init_db_connection(app)
+        if db_connection:
+            # Close old connection if it exists
+            if app.state.db_connection:
+                try:
+                    await app.state.db_connection.close()
+                except Exception:
+                    pass
+            app.state.db_connection = db_connection
+
+    # Attempt to reconnect to Redis if not ready
+    if not app.state.redis_ready or app.state.redis_error:
+        logger.info("Redis connection not ready, attempting to reconnect...")
+        redis_connection = await _init_redis_connection(app)
+        if redis_connection:
+            # Close old connection if it exists
+            if app.state.redis_connection:
+                try:
+                    await app.state.redis_connection.close()
+                except Exception:
+                    pass
+            app.state.redis_connection = redis_connection
 
     res = HealthResponse(
         status="ok",

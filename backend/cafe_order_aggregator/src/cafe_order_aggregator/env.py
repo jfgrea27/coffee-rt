@@ -2,6 +2,9 @@
 
 import os
 
+# App configuration
+APP_TITLE = os.getenv("APP_TITLE", "cafe-order-aggregator")
+APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 # Logging configuration
 LOG_FILE = os.getenv("LOG_FILE", "logs/aggregator.log")
 

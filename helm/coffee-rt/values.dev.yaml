@@ -122,3 +122,109 @@ redis:
     persistence:
       enabled: true
       size: 1Gi
+
+# Prometheus configuration
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: false
+    service:
+      type: ClusterIP
+  # Extra scrape configs for our app and kube-state-metrics
+  extraScrapeConfigs: |
+    - job_name: 'coffee-rt-api'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - coffee-ns
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+    - job_name: 'kube-state-metrics'
+      static_configs:
+        - targets: ['coffee-rt-kube-state-metrics:8080']
+
+# Loki configuration (log aggregation)
+loki:
+  enabled: true
+  deploymentMode: SingleBinary
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    rulerConfig:
+      storage:
+        type: local
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: false
+    extraVolumes:
+      - name: data
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: data
+        mountPath: /var/loki
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  backend:
+    replicas: 0
+  gateway:
+    enabled: false
+  test:
+    enabled: false
+  lokiCanary:
+    enabled: false
+  chunksCache:
+    enabled: false
+  resultsCache:
+    enabled: false
+
+# Promtail configuration (log collector)
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://coffee-rt-loki:3100/loki/api/v1/push
+
+# Grafana configuration
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin
+  service:
+    type: ClusterIP
+    port: 80
+  persistence:
+    enabled: false
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://coffee-rt-prometheus-server:80
+          access: proxy
+          isDefault: true
+        - name: Loki
+          type: loki
+          url: http://coffee-rt-loki:3100
+          access: proxy
+          jsonData:
+            maxLines: 1000

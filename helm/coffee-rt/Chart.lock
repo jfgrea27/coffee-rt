@@ -14,5 +14,17 @@ dependencies:
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 20.6.2
-digest: sha256:d3f7a8acf2cd4e85afe6abe339a918b7c8d2cd634248dcdc16ff6ac906a2b34d
-generated: "2025-12-09T22:51:49.587695Z"
+- name: prometheus
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 27.50.1
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.48.0
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.17.1
+- name: grafana
+  repository: https://grafana.github.io/helm-charts
+  version: 10.3.0
+digest: sha256:f4b339642b7bafcc1e0760a8b871dd9e9883d573b049585637fd25531f0dd73a
+generated: "2025-12-10T21:46:23.87305Z"
