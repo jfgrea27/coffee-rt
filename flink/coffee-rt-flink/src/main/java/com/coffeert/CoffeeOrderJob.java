@@ -24,6 +24,8 @@ import java.sql.Timestamp;
 /**
  * Flink streaming job for processing v3 coffee orders.
  *
+ * @version 0.1.0
+ *
  * This job:
  * 1. Consumes orders from Kafka (topic: orders)
  * 2. Filters for v3 orders only
