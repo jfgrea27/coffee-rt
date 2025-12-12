@@ -11,7 +11,9 @@ import java.util.Map;
  * Aggregates coffee orders within a time window.
  * Accumulates counts and totals by drink and store.
  */
-public class OrderAggregator implements AggregateFunction<CoffeeOrder, OrderAggregator.Accumulator, OrderAggregator.AggregatedMetrics> {
+public class OrderAggregator
+        implements AggregateFunction<CoffeeOrder, OrderAggregator.Accumulator,
+        OrderAggregator.AggregatedMetrics> {
 
     @Override
     public Accumulator createAccumulator() {
@@ -27,14 +29,16 @@ public class OrderAggregator implements AggregateFunction<CoffeeOrder, OrderAggr
         String drink = order.getDrink();
         if (drink != null) {
             acc.drinkCounts.merge(drink, 1L, Long::sum);
-            acc.drinkRevenue.merge(drink, order.getPrice() != null ? order.getPrice() : BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal drinkPrice = order.getPrice() != null ? order.getPrice() : BigDecimal.ZERO;
+            acc.drinkRevenue.merge(drink, drinkPrice, BigDecimal::add);
         }
 
         // Count by store
         String store = order.getStore();
         if (store != null) {
             acc.storeCounts.merge(store, 1L, Long::sum);
-            acc.storeRevenue.merge(store, order.getPrice() != null ? order.getPrice() : BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal storePrice = order.getPrice() != null ? order.getPrice() : BigDecimal.ZERO;
+            acc.storeRevenue.merge(store, storePrice, BigDecimal::add);
         }
 
         return acc;

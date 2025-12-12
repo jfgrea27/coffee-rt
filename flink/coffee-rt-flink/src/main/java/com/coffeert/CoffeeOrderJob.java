@@ -30,10 +30,14 @@ import java.sql.Timestamp;
  * 3. Writes all orders to PostgreSQL (replacing kafka-worker)
  * 4. Aggregates metrics and writes to Redis (replacing kafka-aggregator)
  */
-public class CoffeeOrderJob {
+public final class CoffeeOrderJob {
     private static final Logger LOG = LoggerFactory.getLogger(CoffeeOrderJob.class);
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule());
+
+    private CoffeeOrderJob() {
+        // Utility class - prevent instantiation
+    }
 
     public static void main(String[] args) throws Exception {
         // Configuration from environment variables

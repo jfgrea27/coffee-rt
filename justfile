@@ -10,6 +10,8 @@ dev-setup:
 lint-check:
     ruff check .
 
+lint-all: lint-check frontend-lint flink-lint
+
 format:
     ruff format .
     ruff check . --fix
@@ -49,6 +51,10 @@ frontend-test-watch:
 frontend-lint:
     cd frontend && npx tsc --noEmit
 
+## Flink
+flink-lint:
+    cd flink/coffee-rt-flink && mvn checkstyle:check -B
+
 ## Test
 test project:
     cd backend/{{project}} && uv run pytest -v
@@ -57,10 +63,28 @@ test-all:
     cd backend/shared && uv run pytest -v
     cd backend/cafe_order_api && uv run pytest -v
     cd backend/cafe_order_aggregator && uv run pytest -v
+    cd flink/coffee-rt-flink && mvn test -B
     cd frontend && npm test -- --run
+
+# Flink tests
+flink-test:
+    cd flink/coffee-rt-flink && mvn test -B
+
+flink-test-verbose:
+    cd flink/coffee-rt-flink && mvn test
 
 coverage project:
     cd backend/{{project}} && uv run pytest --cov=src --cov-report=term-missing --cov-report=html
+
+# Flink coverage
+flink-coverage:
+    cd flink/coffee-rt-flink && mvn clean verify -B
+    @echo ""
+    @echo "Coverage report: flink/coffee-rt-flink/target/site/jacoco/index.html"
+
+# Flink coverage check (fails if below 60%)
+flink-coverage-check:
+    cd flink/coffee-rt-flink && mvn clean verify -B
 
 coverage-all:
     rm -f .coverage
@@ -71,6 +95,7 @@ coverage-all:
     cd backend/cafe_order_aggregator && uv run coverage run --source=src -m pytest
     cd backend/cafe_order_aggregator && uv run coverage report --show-missing
     cd frontend && npm test -- --coverage
+    cd flink/coffee-rt-flink && mvn clean verify -B
 
 ## Docker
 

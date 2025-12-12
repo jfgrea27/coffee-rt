@@ -33,7 +33,8 @@ public class CoffeeOrder implements Serializable {
 
     public CoffeeOrder() {}
 
-    public CoffeeOrder(String messageId, String drink, String store, BigDecimal price, String timestamp, String version) {
+    public CoffeeOrder(String messageId, String drink, String store,
+                       BigDecimal price, String timestamp, String version) {
         this.messageId = messageId;
         this.drink = drink;
         this.store = store;

@@ -24,8 +24,13 @@
             kubernetes-helm
             kubectl
             terragrunt
+            openjdk17
+            maven
           ];
         };
+        shellHook = ''
+          export PATH=${pkgs.maven}/bin:$PATH
+        '';
       }
     );
 }

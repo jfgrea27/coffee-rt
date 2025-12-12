@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-11 AS builder
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Runtime image using Flink
-FROM flink:1.18-java11
+FROM flink:1.18-java17
 
 # Copy the built JAR
 COPY --from=builder /app/target/coffee-rt-flink-1.0.0.jar /opt/flink/usrlib/coffee-rt-flink.jar
