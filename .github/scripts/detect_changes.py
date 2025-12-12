@@ -37,7 +37,7 @@ SERVICES = {
 
 # Non-Python services
 OTHER_SERVICES = {
-    "frontend": {
+    "cafe-dashboard": {
         "path": "frontend",
         "dockerfile": "frontend/Dockerfile",
         "context": "frontend",
