@@ -70,6 +70,20 @@ spec:
               value: {{ .Values.connection.maxRetries | quote }}
             - name: CONNECTION_INITIAL_BACKOFF
               value: {{ .Values.connection.initialBackoff | quote }}
+            - name: DB_POOL_MIN_SIZE
+              value: {{ .Values.dbPool.minSize | quote }}
+            - name: DB_POOL_MAX_SIZE
+              value: {{ .Values.dbPool.maxSize | quote }}
+            - name: KAFKA_ENABLED
+              value: {{ .Values.kafka.enabled | quote }}
+            {{- if .Values.kafka.bootstrapServers }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.kafka.bootstrapServers | quote }}
+            {{- end }}
+            {{- if .Values.logFile }}
+            - name: LOG_FILE
+              value: {{ .Values.logFile | quote }}
+            {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}

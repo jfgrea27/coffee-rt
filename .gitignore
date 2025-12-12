@@ -8,3 +8,6 @@ target/
 node_modules/
 coverage/
 *.tgz
+
+.env
+**/.terragrunt-cache/

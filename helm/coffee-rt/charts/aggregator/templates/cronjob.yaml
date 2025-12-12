@@ -66,6 +66,10 @@ spec:
                   value: {{ include "aggregator.redisHost" . | quote }}
                 - name: REDIS_PORT
                   value: {{ .Values.redis.port | quote }}
+                {{- if .Values.logging.file }}
+                - name: LOG_FILE
+                  value: {{ .Values.logging.file | quote }}
+                {{- end }}
               {{- with .Values.resources }}
               resources:
                 {{- toYaml . | nindent 16 }}

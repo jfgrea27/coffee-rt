@@ -1,4 +1,12 @@
 repos:
+  # Secret detection - runs first to catch leaks early
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+        name: Detect secrets (gitleaks)
+        stages: [pre-commit]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.8
     hooks:

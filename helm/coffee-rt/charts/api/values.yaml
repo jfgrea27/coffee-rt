@@ -105,3 +105,11 @@ connection:
 kafka:
   enabled: false
   bootstrapServers: ""
+
+# Database pool configuration
+dbPool:
+  minSize: 5
+  maxSize: 20
+
+# Log file path
+logFile: ""

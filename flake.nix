@@ -26,6 +26,7 @@
             terragrunt
             openjdk17
             maven
+            azure-cli
           ];
         };
         shellHook = ''

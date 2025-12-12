@@ -1,0 +1,40 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+[extend]
+useDefault = true
+
+# Additional rules for Azure/cloud-specific secrets
+[[rules]]
+id = "azure-storage-account-key"
+description = "Azure Storage Account Key"
+regex = '''(?i)DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]{88}'''
+tags = ["azure", "storage"]
+
+[[rules]]
+id = "azure-connection-string"
+description = "Azure Connection String"
+regex = '''(?i)(AccountKey|SharedAccessKey|Primary|Secondary)=[A-Za-z0-9+/=]{40,}'''
+tags = ["azure"]
+
+# Paths to ignore (test fixtures, examples, etc.)
+[allowlist]
+paths = [
+  '''\.github/README\.md$''',
+  '''infra/README\.md$''',
+  '''.*_test\.go$''',
+  '''.*\.test\.ts$''',
+  '''.*\.spec\.ts$''',
+  '''mock.*\.py$''',
+  '''conftest\.py$''',
+]
+
+# Specific patterns to allow (false positives)
+regexes = [
+  # Terraform mock outputs use placeholder UUIDs
+  '''00000000-0000-0000-0000-000000000000''',
+  # Example/placeholder values in docs
+  '''your-password''',
+  '''REPLACE_WITH_''',
+  '''<your-.*>''',
+]
