@@ -66,6 +66,33 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${maven-checkstyle-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <configLocation>checkstyle.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <failsOnError>true</failsOnError>
+          <violationSeverity>warning</violationSeverity>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.5.1</version>
         <executions>
@@ -231,15 +258,17 @@
     </dependency>
   </dependencies>
   <properties>
-    <java.version>17</java.version>
-    <maven.compiler.source>${java.version}</maven.compiler.source>
-    <mockito.version>5.8.0</mockito.version>
+    <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
     <jackson.version>2.15.3</jackson.version>
-    <jacoco.version>0.8.11</jacoco.version>
     <flink.version>1.18.1</flink.version>
-    <maven.compiler.target>${java.version}</maven.compiler.target>
     <slf4j.version>2.0.9</slf4j.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.1</junit.version>
+    <java.version>17</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <mockito.version>5.8.0</mockito.version>
+    <jacoco.version>0.8.11</jacoco.version>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
+    <checkstyle.version>10.12.5</checkstyle.version>
   </properties>
 </project>

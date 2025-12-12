@@ -94,7 +94,7 @@ coverage-all:
     cd backend/cafe_order_api && uv run coverage report --show-missing
     cd backend/cafe_order_aggregator && uv run coverage run --source=src -m pytest
     cd backend/cafe_order_aggregator && uv run coverage report --show-missing
-    cd frontend && npm test -- --coverage
+    cd frontend && npm test -- --coverage --run
     cd flink/coffee-rt-flink && mvn clean verify -B
 
 ## Docker
