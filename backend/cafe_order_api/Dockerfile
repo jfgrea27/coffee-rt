@@ -19,5 +19,6 @@ RUN mkdir -p logs
 # Expose port
 EXPOSE 8005
 
-# Run the application
-CMD ["uv", "run", "python", "-m", "cafe_order_api.app"]
+# Run with multiple workers (default 4, override with WORKERS env var)
+# Using uvicorn directly instead of python -m to support --workers flag
+CMD ["uv", "run", "uvicorn", "cafe_order_api.app:app", "--host", "0.0.0.0", "--port", "8005", "--workers", "4"]

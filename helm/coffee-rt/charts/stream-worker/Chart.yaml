@@ -1,0 +1,6 @@
+apiVersion: v2
+name: stream-worker
+description: Redis Streams worker - consumes orders from stream and writes to PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

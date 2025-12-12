@@ -1,0 +1,53 @@
+# Default values for Flink subchart
+enabled: true
+
+# Flink image configuration
+image:
+  repository: flink
+  tag: "1.18-java11"
+  pullPolicy: IfNotPresent
+
+# JobManager configuration
+jobmanager:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  service:
+    type: ClusterIP
+    port: 8081
+    rpcPort: 6123
+
+# TaskManager configuration
+taskmanager:
+  replicas: 1
+  taskSlots: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
+# Flink job configuration
+job:
+  image:
+    repository: coffee-rt/flink-job
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  kafka:
+    topic: orders
+    consumerGroup: flink-processors
+  windowSeconds: 1

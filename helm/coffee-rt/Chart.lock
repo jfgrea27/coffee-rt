@@ -8,12 +8,21 @@ dependencies:
 - name: frontend
   repository: ""
   version: 0.1.0
+- name: stream-worker
+  repository: ""
+  version: 0.1.0
+- name: flink
+  repository: ""
+  version: 0.1.0
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 16.4.1
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 20.6.2
+- name: kafka
+  repository: https://charts.bitnami.com/bitnami
+  version: 31.1.0
 - name: prometheus
   repository: https://prometheus-community.github.io/helm-charts
   version: 27.50.1
@@ -26,5 +35,5 @@ dependencies:
 - name: grafana
   repository: https://grafana.github.io/helm-charts
   version: 10.3.0
-digest: sha256:f4b339642b7bafcc1e0760a8b871dd9e9883d573b049585637fd25531f0dd73a
-generated: "2025-12-10T21:46:23.87305Z"
+digest: sha256:60d96496ceaf635c4715b19c205e40e978c5f074492fdf429dc2dc216d7329e2
+generated: "2025-12-11T20:25:16.947129Z"

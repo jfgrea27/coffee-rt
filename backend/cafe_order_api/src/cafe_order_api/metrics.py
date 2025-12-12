@@ -23,7 +23,7 @@ HTTP_REQUEST_DURATION_SECONDS = Histogram(
 ORDERS_CREATED_TOTAL = Counter(
     "orders_created_total",
     "Total number of orders created",
-    ["drink", "store"],
+    ["drink", "store", "version"],
 )
 
 ORDER_VALUE_TOTAL = Counter(

@@ -1,0 +1,10 @@
+Stream Worker has been deployed.
+
+It will consume from Redis Stream: {{ .Values.stream.name }}
+Consumer Group: {{ .Values.stream.consumerGroup }}
+Messages will be written to PostgreSQL at: {{ include "stream-worker.databaseHost" . }}
+
+Real-time metrics will be updated in Redis with keys:
+  v2:metrics:total_orders, v2:metrics:total_revenue
+  v2:metrics:drink_counts, v2:metrics:drink_revenue
+  v2:metrics:store_counts, v2:metrics:store_revenue

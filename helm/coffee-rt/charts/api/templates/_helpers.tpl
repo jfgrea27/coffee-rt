@@ -93,3 +93,14 @@ Redis host - defaults to redis subchart service name
 {{- printf "%s-redis-master" .Release.Name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Kafka bootstrap servers - defaults to kafka subchart service name
+*/}}
+{{- define "api.kafkaBootstrapServers" -}}
+{{- if .Values.kafka.bootstrapServers }}
+{{- .Values.kafka.bootstrapServers }}
+{{- else }}
+{{- printf "%s-kafka:9092" .Release.Name }}
+{{- end }}
+{{- end }}

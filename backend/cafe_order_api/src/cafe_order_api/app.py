@@ -2,15 +2,14 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
+from aiokafka import AIOKafkaProducer
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 from redis.asyncio import Redis
 from shared import get_uvicorn_config, setup_logging
 
 from cafe_order_api.domain import (
-    CoffeeOrderRequest,
-    CoffeeOrderResponse,
     DashboardResponse,
     HealthResponse,
 )
@@ -23,15 +22,19 @@ from cafe_order_api.env import (
     CONNECTION_MAX_RETRIES,
     DATABASE_URL,
     DATABASE_URL_SANITIZED,
+    DB_POOL_MAX_SIZE,
+    DB_POOL_MIN_SIZE,
+    KAFKA_BOOTSTRAP_SERVERS,
+    KAFKA_ENABLED,
     LOG_FILE,
     REDIS_URL,
     REDIS_URL_SANITIZED,
 )
 from cafe_order_api.handlers.dashboard import get_dashboard as handle_get_dashboard
-from cafe_order_api.handlers.orders import create_order as handle_create_order
 from cafe_order_api.handlers.websocket import dashboard_websocket_handler
 from cafe_order_api.metrics import APP_INFO
 from cafe_order_api.middelware import MetricsMiddleware, ServiceHealthMiddleware
+from cafe_order_api.routers import v1_router, v2_router, v3_router
 from cafe_order_api.utils import connect_with_retry
 
 app = FastAPI()
@@ -48,16 +51,29 @@ async def get_redis_connection(request: Request) -> Redis:
     return request.app.state.redis_connection
 
 
-async def get_db_connection(request: Request) -> AsyncConnection:
-    """Get database connection from app state."""
-    return request.app.state.db_connection
+async def get_db_connection(request: Request):
+    """Get database connection from pool."""
+    async with request.app.state.db_pool.connection() as conn:
+        yield conn
 
 
-async def _init_db_connection(app: FastAPI):
-    """Initialize database connection and update app state."""
+async def _init_db_pool(app: FastAPI):
+    """Initialize database connection pool and update app state."""
+
+    async def create_pool():
+        pool = AsyncConnectionPool(
+            conninfo=DATABASE_URL,
+            min_size=DB_POOL_MIN_SIZE,
+            max_size=DB_POOL_MAX_SIZE,
+            open=False,
+        )
+        await pool.open()
+        await pool.check()  # Verify pool is working
+        return pool
+
     result = await connect_with_retry(
-        lambda: AsyncConnection.connect(DATABASE_URL),
-        "database",
+        create_pool,
+        "database pool",
         max_retries=CONNECTION_MAX_RETRIES,
         initial_backoff=CONNECTION_INITIAL_BACKOFF,
     )
@@ -65,10 +81,12 @@ async def _init_db_connection(app: FastAPI):
         _, error = result
         app.state.db_ready = False
         app.state.db_error = str(error)
-        logger.warning(f"Failed to initialize database connection: {error}")
+        logger.warning(f"Failed to initialize database pool: {error}")
         return None
     else:
-        logger.info("Database connection initialized")
+        logger.info(
+            f"Database connection pool initialized (min={DB_POOL_MIN_SIZE}, max={DB_POOL_MAX_SIZE})"
+        )
         app.state.db_ready = True
         app.state.db_error = None
         return result
@@ -101,6 +119,49 @@ async def _init_redis_connection(app: FastAPI):
         return result
 
 
+async def _init_kafka_producer(app: FastAPI):
+    """Initialize Kafka producer and update app state."""
+    if not KAFKA_ENABLED:
+        logger.info("Kafka is disabled, skipping producer initialization")
+        app.state.kafka_producer = None
+        app.state.kafka_ready = False
+        app.state.kafka_error = "Kafka disabled"
+        return None
+
+    async def create_producer():
+        producer = AIOKafkaProducer(
+            bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+            enable_idempotence=True,  # Exactly-once semantics
+            # Batching for throughput - collect messages for up to 5ms
+            linger_ms=5,
+            # Batch size in bytes (16KB default, increase for high throughput)
+            max_batch_size=32768,
+            # Compression for better network efficiency
+            compression_type="lz4",
+        )
+        await producer.start()
+        return producer
+
+    result = await connect_with_retry(
+        create_producer,
+        "Kafka producer",
+        max_retries=CONNECTION_MAX_RETRIES,
+        initial_backoff=CONNECTION_INITIAL_BACKOFF,
+    )
+    if isinstance(result, tuple):
+        _, error = result
+        app.state.kafka_ready = False
+        app.state.kafka_error = str(error)
+        app.state.kafka_producer = None
+        logger.warning(f"Failed to initialize Kafka producer: {error}")
+        return None
+    else:
+        logger.info(f"Kafka producer initialized (servers={KAFKA_BOOTSTRAP_SERVERS})")
+        app.state.kafka_ready = True
+        app.state.kafka_error = None
+        return result
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage the application lifespan."""
@@ -109,13 +170,25 @@ async def lifespan(app: FastAPI):
     app.state.db_error = None
     app.state.redis_ready = False
     app.state.redis_error = None
+    app.state.kafka_ready = False
+    app.state.kafka_error = None
+    app.state.kafka_producer = None
 
-    db_connection = await _init_db_connection(app)
-    app.state.db_connection = db_connection
+    db_pool = await _init_db_pool(app)
+    app.state.db_pool = db_pool
     redis_connection = await _init_redis_connection(app)
     app.state.redis_connection = redis_connection
+    kafka_producer = await _init_kafka_producer(app)
+    app.state.kafka_producer = kafka_producer
 
     yield
+
+    if kafka_producer:
+        try:
+            await kafka_producer.stop()
+            logger.info("Kafka producer stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping Kafka producer: {e}")
 
     if redis_connection:
         try:
@@ -124,12 +197,12 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Error closing Redis connection: {e}")
 
-    if db_connection:
+    if db_pool:
         try:
-            await db_connection.close()
-            logger.info("Database connection closed")
+            await db_pool.close()
+            logger.info("Database connection pool closed")
         except Exception as e:
-            logger.warning(f"Error closing database connection: {e}")
+            logger.warning(f"Error closing database pool: {e}")
 
     logger.info("Application shutdown complete")
 
@@ -139,9 +212,14 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
 # Set application info for Prometheus
 APP_INFO.info({"version": APP_VERSION, "title": APP_TITLE})
 
-# Add middleware (order matters
+# Add middleware (order matters)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(ServiceHealthMiddleware)
+
+# Mount versioned API routers
+app.include_router(v1_router, prefix="/api/v1")
+app.include_router(v2_router, prefix="/api/v2")
+app.include_router(v3_router, prefix="/api/v3")
 
 
 @app.get("/metrics")
@@ -174,16 +252,16 @@ async def readiness_check() -> HealthResponse:
     """
     # Attempt to reconnect to database if not ready
     if not app.state.db_ready or app.state.db_error:
-        logger.info("Database connection not ready, attempting to reconnect...")
-        db_connection = await _init_db_connection(app)
-        if db_connection:
-            # Close old connection if it exists
-            if app.state.db_connection:
+        logger.info("Database pool not ready, attempting to reconnect...")
+        db_pool = await _init_db_pool(app)
+        if db_pool:
+            # Close old pool if it exists
+            if app.state.db_pool:
                 try:
-                    await app.state.db_connection.close()
+                    await app.state.db_pool.close()
                 except Exception:
                     pass
-            app.state.db_connection = db_connection
+            app.state.db_pool = db_pool
 
     # Attempt to reconnect to Redis if not ready
     if not app.state.redis_ready or app.state.redis_error:
@@ -222,17 +300,6 @@ async def readiness_check() -> HealthResponse:
     if not app.state.redis_ready or app.state.redis_error:
         raise HTTPException(status_code=503, detail="Redis connection not available")
 
-    return res
-
-
-@app.post("/api/order")
-async def create_order(
-    order: CoffeeOrderRequest, db: AsyncConnection = Depends(get_db_connection)
-) -> CoffeeOrderResponse:
-    """Create a new coffee order."""
-    logger.info(f"Creating order: {order}")
-    res = await handle_create_order(db=db, order=order)
-    logger.info(f"Order created: {res}")
     return res
 
 

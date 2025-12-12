@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flink.fullname" . }}-jobmanager
+  labels:
+    {{- include "flink.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jobmanager
+spec:
+  replicas: {{ .Values.jobmanager.replicas }}
+  selector:
+    matchLabels:
+      {{- include "flink.jobmanager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "flink.jobmanager.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: jobmanager
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["jobmanager"]
+          ports:
+            - name: rpc
+              containerPort: 6123
+              protocol: TCP
+            - name: blob-server
+              containerPort: 6124
+              protocol: TCP
+            - name: webui
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /overview
+              port: webui
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /overview
+              port: webui
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.jobmanager.resources | nindent 12 }}
+          volumeMounts:
+            - name: flink-config
+              mountPath: /opt/flink/conf/flink-conf.yaml
+              subPath: flink-conf.yaml
+            - name: flink-config
+              mountPath: /opt/flink/conf/log4j-console.properties
+              subPath: log4j-console.properties
+      volumes:
+        - name: flink-config
+          configMap:
+            name: {{ include "flink.fullname" . }}-config

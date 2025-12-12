@@ -3,8 +3,9 @@
 #
 # For local development with locally built images, use imagePullPolicy: Never
 # Build images locally first:
-#   docker build -t coffee-rt/cafe-order-api:latest ./backend/api
-#   docker build -t coffee-rt/cafe-order-aggregator:latest ./backend/aggregator
+#   docker build -t coffee-rt/cafe-order-api:latest -f backend/cafe_order_api/Dockerfile .
+#   docker build -t coffee-rt/cafe-order-aggregator:latest -f backend/cafe_order_aggregator/Dockerfile.cron .
+#   docker build -t coffee-rt/stream-worker:latest -f backend/stream_worker/Dockerfile .
 #   docker build -t coffee-rt/cafe-dashboard:latest ./frontend
 
 # Global configuration
@@ -49,6 +50,54 @@ aggregator:
     requests:
       cpu: 50m
       memory: 64Mi
+
+stream-worker:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: coffee-rt/stream-worker
+    tag: latest
+    pullPolicy: Never
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  stream:
+    name: orders:stream
+    consumerGroup: order-workers
+
+flink:
+  enabled: true
+  jobmanager:
+    replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+  taskmanager:
+    replicas: 1
+    taskSlots: 2
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+  job:
+    image:
+      repository: coffee-rt/flink-job
+      tag: latest
+      pullPolicy: Never
+    kafka:
+      topic: orders
+      consumerGroup: flink-processors
 
 frontend:
   enabled: true
@@ -101,11 +150,25 @@ postgresql:
 
           CREATE TABLE IF NOT EXISTS coffee_rt.orders (
               id SERIAL PRIMARY KEY,
+              message_id VARCHAR(36) UNIQUE,
               drink coffee_rt.drink NOT NULL,
               store coffee_rt.store NOT NULL,
               price NUMERIC(10, 2) NOT NULL,
               timestamp TIMESTAMP NOT NULL DEFAULT NOW()
           );
+
+          -- Add message_id column if table exists without it (migration)
+          DO $$
+          BEGIN
+              IF NOT EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = 'coffee_rt'
+                  AND table_name = 'orders'
+                  AND column_name = 'message_id'
+              ) THEN
+                  ALTER TABLE coffee_rt.orders ADD COLUMN message_id VARCHAR(36) UNIQUE;
+              END IF;
+          END $$;
     persistence:
       enabled: true
       size: 1Gi
@@ -123,6 +186,24 @@ redis:
     persistence:
       enabled: true
       size: 1Gi
+
+# Kafka subchart configuration (Bitnami) - KRaft mode (no Zookeeper)
+kafka:
+  enabled: true
+  listeners:
+    client:
+      protocol: PLAINTEXT
+    controller:
+      protocol: PLAINTEXT
+    interbroker:
+      protocol: PLAINTEXT
+  controller:
+    replicaCount: 1
+  kraft:
+    enabled: true
+  persistence:
+    enabled: true
+    size: 2Gi
 
 # Prometheus configuration
 prometheus:

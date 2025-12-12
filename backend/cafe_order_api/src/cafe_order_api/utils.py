@@ -3,6 +3,7 @@
 import asyncio
 import logging
 
+from aiokafka.errors import KafkaConnectionError
 from psycopg import OperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 
@@ -31,7 +32,7 @@ async def connect_with_retry(
     for attempt in range(max_retries):
         try:
             return await connect_fn()
-        except (OperationalError, RedisConnectionError, OSError) as e:
+        except (OperationalError, RedisConnectionError, KafkaConnectionError, OSError) as e:
             last_exception = e
             if attempt < max_retries - 1:
                 backoff = initial_backoff * (2**attempt)

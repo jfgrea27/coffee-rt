@@ -23,6 +23,7 @@
             redis
             kubernetes-helm
             kubectl
+            terragrunt
           ];
         };
       }

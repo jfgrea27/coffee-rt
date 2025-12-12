@@ -1,0 +1,67 @@
+# Default values for stream-worker.
+replicaCount: 1
+
+image:
+  repository: coffee-rt/stream-worker
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "false"
+podLabels:
+  app.kubernetes.io/component: stream-worker
+  monitoring: enabled
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Database configuration
+database:
+  host: ""
+  port: 5432
+  name: coffee-rt
+  user: coffee-rt
+  schema: coffee_rt
+  secretName: ""
+
+# Redis configuration
+redis:
+  host: ""
+  port: 6379
+
+# Redis Streams configuration
+stream:
+  name: orders:stream
+  consumerGroup: order-workers
+
+# Batch configuration
+batch:
+  size: 100
+  timeoutMs: 2000
+
+# Logging configuration
+logging:
+  file: /app/logs/stream-worker.log

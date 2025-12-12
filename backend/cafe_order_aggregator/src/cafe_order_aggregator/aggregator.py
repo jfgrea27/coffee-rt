@@ -1,111 +1,152 @@
-"""Aggregation logic for computing metrics."""
+"""Aggregation job for computing and caching metrics."""
 
-import json
-from collections import Counter
+import asyncio
+import logging
+from datetime import UTC, datetime
 
+from psycopg import AsyncConnection, OperationalError
 from redis.asyncio import Redis
-from shared import CoffeeOrder
+from redis.exceptions import ConnectionError as RedisConnectionError
+
+from cafe_order_aggregator.db.queries import (
+    get_orders_for_hour,
+    get_orders_last_30_days,
+    get_recent_orders,
+)
+from cafe_order_aggregator.env import APP_TITLE, DATABASE_URL, REDIS_URL
+from cafe_order_aggregator.redis_client import (
+    update_hourly_metrics,
+    update_recent_orders,
+    update_top5_drinks,
+)
+from cafe_order_aggregator.utils import (
+    compute_hourly_metrics,
+    compute_top5_drinks,
+)
+
+logger = logging.getLogger(APP_TITLE)
+
+MAX_RETRIES = 3
+INITIAL_BACKOFF_SECONDS = 1
 
 
-def compute_hourly_metrics(orders: list[CoffeeOrder]) -> dict:
-    """Compute metrics for a given hour's orders.
+async def connect_with_retry(
+    connect_fn,
+    service_name: str,
+    max_retries: int = MAX_RETRIES,
+    initial_backoff: float = INITIAL_BACKOFF_SECONDS,
+):
+    """Connect to a service with exponential backoff retry.
 
     Args:
-        orders: List of orders for the hour
+        connect_fn: Async function that returns a connection
+        service_name: Name of the service for logging
+        max_retries: Maximum number of retry attempts
+        initial_backoff: Initial backoff time in seconds
 
     Returns:
-        Dictionary with top_drinks, revenue, and order_count
+        Connection object
+
+    Raises:
+        Exception: If all retries are exhausted
     """
-    if not orders:
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return await connect_fn()
+        except (OperationalError, RedisConnectionError, OSError) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                backoff = initial_backoff * (2**attempt)
+                logger.warning(
+                    f"Failed to connect to {service_name} "
+                    f"(attempt {attempt + 1}/{max_retries}): {e}. "
+                    f"Retrying in {backoff}s..."
+                )
+                await asyncio.sleep(backoff)
+            else:
+                logger.error(
+                    f"Failed to connect to {service_name} after {max_retries} attempts: {e}"
+                )
+    raise last_exception
+
+
+async def run_aggregation(
+    db: AsyncConnection | None = None,
+    redis: Redis | None = None,
+) -> dict:
+    """Run all aggregation tasks and update Redis cache.
+
+    Args:
+        db: Optional database connection (creates one if not provided)
+        redis: Optional Redis connection (creates one if not provided)
+
+    Returns:
+        Dictionary with aggregation results
+    """
+    logger.info("Starting aggregation job")
+
+    # Track whether we created the connections (for cleanup)
+    created_db = db is None
+    created_redis = redis is None
+
+    # Connect to database with retry if not provided
+    if db is None:
+        logger.info("Connecting to database...")
+        db = await connect_with_retry(
+            lambda: AsyncConnection.connect(DATABASE_URL),
+            "database",
+        )
+
+    # Connect to Redis with retry if not provided
+    if redis is None:
+        logger.info("Connecting to Redis...")
+
+        async def connect_redis():
+            client = Redis.from_url(REDIS_URL)
+            await client.ping()  # Verify connection
+            return client
+
+        redis = await connect_with_retry(connect_redis, "Redis")
+
+    try:
+        # 1. Update hourly metrics for current hour (UTC)
+        current_hour = datetime.now(UTC).hour
+        logger.info(f"Fetching orders for hour {current_hour}")
+        hourly_orders = await get_orders_for_hour(db, current_hour)
+        hourly_metrics = compute_hourly_metrics(hourly_orders)
+        await update_hourly_metrics(redis, current_hour, hourly_metrics)
+        logger.info(
+            f"Updated metrics:hourly:{current_hour} - "
+            f"{hourly_metrics['order_count']} orders, ${hourly_metrics['revenue']} revenue"
+        )
+
+        # 2. Update top 5 drinks from last 30 days
+        logger.info("Fetching orders from last 30 days")
+        monthly_orders = await get_orders_last_30_days(db)
+        top5 = compute_top5_drinks(monthly_orders)
+        await update_top5_drinks(redis, top5)
+        logger.info(f"Updated metrics:top5 - {top5}")
+
+        # 3. Update recent orders (last hour)
+        logger.info("Fetching recent orders")
+        recent_orders = await get_recent_orders(db)
+        await update_recent_orders(redis, recent_orders)
+        logger.info(f"Updated orders:recent - {len(recent_orders)} orders")
+
+        logger.info("Aggregation job completed successfully")
+
         return {
-            "top_drinks": [],
-            "revenue": 0.0,
-            "order_count": 0,
+            "hourly_metrics": hourly_metrics,
+            "top5_drinks": top5,
+            "recent_orders_count": len(recent_orders),
         }
 
-    drink_counts = Counter(order.drink.value for order in orders)
-    top_drinks = [drink for drink, _ in drink_counts.most_common(5)]
-    revenue = sum(order.price for order in orders)
-
-    return {
-        "top_drinks": top_drinks,
-        "revenue": round(revenue, 2),
-        "order_count": len(orders),
-    }
-
-
-def compute_top5_drinks(orders: list[CoffeeOrder]) -> list[str]:
-    """Compute top 5 drinks from orders.
-
-    Args:
-        orders: List of orders to analyze
-
-    Returns:
-        List of top 5 drink names by order count
-    """
-    if not orders:
-        return []
-
-    drink_counts = Counter(order.drink.value for order in orders)
-    return [drink for drink, _ in drink_counts.most_common(5)]
-
-
-def serialize_orders(orders: list[CoffeeOrder]) -> list[dict]:
-    """Serialize orders to JSON-serializable format.
-
-    Args:
-        orders: List of orders
-
-    Returns:
-        List of order dictionaries
-    """
-    return [
-        {
-            "id": order.id,
-            "drink": order.drink.value,
-            "store": order.store.value,
-            "price": order.price,
-            "timestamp": order.timestamp.isoformat(),
-        }
-        for order in orders
-    ]
-
-
-async def update_hourly_metrics(redis: Redis, hour: int, metrics: dict) -> None:
-    """Update Redis cache with hourly metrics.
-
-    Args:
-        redis: Redis connection
-        hour: Hour of the day (0-23)
-        metrics: Computed metrics dictionary
-    """
-    key = f"metrics:hourly:{hour}"
-    await redis.set(key, json.dumps(metrics))
-    # Expire after 25 hours to ensure we keep data for the current day cycle
-    await redis.expire(key, 25 * 3600)
-
-
-async def update_top5_drinks(redis: Redis, top_drinks: list[str]) -> None:
-    """Update Redis cache with top 5 drinks.
-
-    Args:
-        redis: Redis connection
-        top_drinks: List of top 5 drink names
-    """
-    key = "metrics:top5"
-    await redis.set(key, json.dumps(top_drinks))
-    # No expiry - this is a rolling 30-day metric
-
-
-async def update_recent_orders(redis: Redis, orders: list[CoffeeOrder]) -> None:
-    """Update Redis cache with recent orders.
-
-    Args:
-        redis: Redis connection
-        orders: List of recent orders
-    """
-    key = "orders:recent"
-    serialized = serialize_orders(orders)
-    await redis.set(key, json.dumps(serialized))
-    # Expire after 2 hours to ensure staleness is detected
-    await redis.expire(key, 2 * 3600)
+    finally:
+        # Only close connections we created
+        if created_redis and redis:
+            await redis.close()
+            logger.info("Redis connection closed")
+        if created_db and db:
+            await db.close()
+            logger.info("Database connection closed")

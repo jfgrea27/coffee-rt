@@ -100,3 +100,8 @@ dashboardUpdateInterval: 30
 connection:
   maxRetries: 3
   initialBackoff: 1.0
+
+# Kafka configuration
+kafka:
+  enabled: false
+  bootstrapServers: ""

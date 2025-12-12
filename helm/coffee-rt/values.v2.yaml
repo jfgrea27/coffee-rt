@@ -1,0 +1,166 @@
+# v2: Redis Streams + Stream Worker
+# Usage: helm install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.v2.yaml
+#
+# Architecture: API → Redis Stream → Stream Worker → PostgreSQL + Redis → Dashboard
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# API Service - writes to Redis Streams
+api:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: coffee-rt/cafe-order-api
+    tag: latest
+    pullPolicy: Never
+  service:
+    type: ClusterIP
+    port: 8005
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  dashboardUpdateInterval: 10
+  # Disable Kafka for v2
+  kafka:
+    enabled: false
+
+# Disable v1 aggregator (stream-worker handles metrics)
+aggregator:
+  enabled: false
+
+# Stream Worker - consumes from Redis Streams, writes to PostgreSQL
+stream-worker:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: coffee-rt/stream-worker
+    tag: latest
+    pullPolicy: Never
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  stream:
+    name: orders:stream
+    consumerGroup: order-workers
+  batch:
+    size: 100
+    timeoutMs: 2000
+
+# Disable v3 components
+flink:
+  enabled: false
+
+kafka:
+  enabled: false
+
+# Frontend
+frontend:
+  enabled: true
+  image:
+    repository: coffee-rt/cafe-dashboard
+    tag: latest
+    pullPolicy: Never
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Database configuration
+database:
+  password: coffee-rt_password
+
+# PostgreSQL subchart configuration (Bitnami)
+postgresql:
+  enabled: true
+  image:
+    tag: latest
+    pullPolicy: IfNotPresent
+  auth:
+    username: coffee-rt
+    password: coffee-rt_password
+    database: coffee-rt
+  primary:
+    initdb:
+      scripts:
+        init-schema.sql: |
+          CREATE SCHEMA IF NOT EXISTS coffee_rt;
+
+          DO $$ BEGIN
+              CREATE TYPE coffee_rt.drink AS ENUM ('cappuccino', 'americano', 'latte');
+          EXCEPTION
+              WHEN duplicate_object THEN null;
+          END $$;
+
+          DO $$ BEGIN
+              CREATE TYPE coffee_rt.store AS ENUM ('uptown', 'downtown', 'central', 'southend');
+          EXCEPTION
+              WHEN duplicate_object THEN null;
+          END $$;
+
+          CREATE TABLE IF NOT EXISTS coffee_rt.orders (
+              id SERIAL PRIMARY KEY,
+              message_id VARCHAR(36) UNIQUE,
+              drink coffee_rt.drink NOT NULL,
+              store coffee_rt.store NOT NULL,
+              price NUMERIC(10, 2) NOT NULL,
+              timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Redis subchart configuration (Bitnami)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  image:
+    tag: latest
+    pullPolicy: IfNotPresent
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+# Observability - enabled by default
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: false
+    service:
+      type: ClusterIP
+
+loki:
+  enabled: false
+
+promtail:
+  enabled: false
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin
+  service:
+    type: ClusterIP
+    port: 80
+  persistence:
+    enabled: false

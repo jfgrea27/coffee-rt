@@ -8,7 +8,25 @@ at various store locations.
 import random
 from datetime import UTC, datetime
 
-from locust import HttpUser, between, task
+from locust import HttpUser, between, events, task
+
+
+@events.init_command_line_parser.add_listener
+def add_custom_arguments(parser):
+    """Add custom command line arguments for API version."""
+    parser.add_argument(
+        "--api-version",
+        type=str,
+        default="v1",
+        choices=["v1", "v2", "v3"],
+        help="API version to use for order placement (v1, v2, or v3)",
+    )
+
+
+def get_order_endpoint(user) -> str:
+    """Get the order endpoint path based on the configured API version."""
+    version = user.environment.parsed_options.api_version
+    return f"/api/{version}/order"
 
 
 class CoffeeConsumer(HttpUser):
@@ -40,7 +58,7 @@ class CoffeeConsumer(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
     @task(3)
     def order_cappuccino(self) -> None:
@@ -56,7 +74,7 @@ class CoffeeConsumer(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
     @task(2)
     def order_morning_latte(self) -> None:
@@ -72,7 +90,7 @@ class CoffeeConsumer(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
     @task(1)
     def order_americano(self) -> None:
@@ -88,7 +106,7 @@ class CoffeeConsumer(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
 
 class DowntownRegular(HttpUser):
@@ -117,7 +135,7 @@ class DowntownRegular(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
 
 class CappuccinoLover(HttpUser):
@@ -140,7 +158,7 @@ class CappuccinoLover(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)
 
 
 class RushHourCustomer(HttpUser):
@@ -171,4 +189,4 @@ class RushHourCustomer(HttpUser):
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        self.client.post("/api/order", json=order)
+        self.client.post(get_order_endpoint(self), json=order)

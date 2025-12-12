@@ -1,0 +1,41 @@
+[project]
+name = "stream-worker"
+version = "0.1.0"
+description = "Redis Streams worker - consumes orders and writes to PostgreSQL"
+requires-python = ">=3.13"
+dependencies = ["coffee-rt-shared", "redis>=7.1.0", "psycopg[binary]>=3.1.0"]
+
+[project.scripts]
+stream-worker = "stream_worker.main:main"
+
+[tool.uv.sources]
+coffee-rt-shared = { path = "../shared" }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.2.0",
+    "ruff>=0.8.0",
+    "coverage>=7.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=9.0.0", "pytest-asyncio>=1.2.0", "pytest-cov>=4.1.0", "ruff>=0.8.0", "coverage>=7.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stream_worker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]

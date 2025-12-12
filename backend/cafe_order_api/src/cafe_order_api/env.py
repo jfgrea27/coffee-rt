@@ -32,3 +32,11 @@ REDIS_URL_SANITIZED = f"redis://********:********@{REDIS_HOST}:{REDIS_PORT}"
 # Connection retry configuration
 CONNECTION_MAX_RETRIES = int(os.getenv("CONNECTION_MAX_RETRIES", "3"))
 CONNECTION_INITIAL_BACKOFF = float(os.getenv("CONNECTION_INITIAL_BACKOFF", "1.0"))
+
+# Database connection pool configuration
+DB_POOL_MIN_SIZE = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
+DB_POOL_MAX_SIZE = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
+
+# Kafka configuration
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+KAFKA_ENABLED = os.getenv("KAFKA_ENABLED", "false").lower() == "true"

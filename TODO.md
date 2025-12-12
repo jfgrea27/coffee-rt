@@ -1,13 +1,10 @@
 # Production Readiness TODO
 
 ## Monitoring
-- [ ] Application metrics (Prometheus, CloudWatch, etc.)
-- [ ] Dashboards (Grafana, CloudWatch Dashboards)
 - [ ] Alerting rules
 - [ ] Health check endpoints
 
 ## Deploy to Cloud (AWS)
-- [ ] Complete Helm charts
 - [ ] Infrastructure as Code (Terraform/CloudFormation)
 - [ ] CI/CD pipelines for deployment
 - [ ] Production Dockerfile optimization

@@ -15,6 +15,12 @@ dependencies:
   - name: frontend
     version: "0.1.0"
     condition: frontend.enabled
+  - name: stream-worker
+    version: "0.1.0"
+    condition: stream-worker.enabled
+  - name: flink
+    version: "0.1.0"
+    condition: flink.enabled
   - name: postgresql
     version: "16.4.1"
     repository: "https://charts.bitnami.com/bitnami"
@@ -23,6 +29,10 @@ dependencies:
     version: "20.6.2"
     repository: "https://charts.bitnami.com/bitnami"
     condition: redis.enabled
+  - name: kafka
+    version: "31.1.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: kafka.enabled
   - name: prometheus
     version: "27.50.1"
     repository: "https://prometheus-community.github.io/helm-charts"

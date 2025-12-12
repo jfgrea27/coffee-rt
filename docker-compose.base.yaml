@@ -1,0 +1,169 @@
+# Base infrastructure shared by all versions
+# Usage: docker compose -f docker-compose.base.yaml -f docker-compose.v1.yaml up -d
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: coffee-rt
+      POSTGRES_PASSWORD: coffee-rt_password
+      POSTGRES_DB: coffee-rt
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coffee-rt -d coffee-rt"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coffee-rt
+
+  db-migrate:
+    container_name: db-migrate
+    build:
+      context: .
+      dockerfile: .dev/db-migrate/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://coffee-rt:coffee-rt_password@postgres:5432/coffee-rt
+      POSTGRES_SCHEMA: coffee_rt
+    networks:
+      - coffee-rt
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - coffee-rt
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  redis-init:
+    container_name: redis-init
+    build:
+      context: .
+      dockerfile: .dev/redis-init/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_INIT: ${REDIS_INIT}
+    networks:
+      - coffee-rt
+
+  cafe-dashboard:
+    container_name: cafe-dashboard
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - cafe-order-api
+    networks:
+      - coffee-rt
+
+  # Monitoring stack
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    ports:
+      - "8080:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/containerd:/var/lib/containerd:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '--containerd=/var/run/containerd/containerd.sock'
+      - '--docker_only=false'
+      - '--store_container_labels=true'
+    networks:
+      - coffee-rt
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.47.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./.dev/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - coffee-rt
+
+  loki:
+    container_name: loki
+    image: grafana/loki:2.9.2
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./.dev/monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - coffee-rt
+
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:2.9.2
+    volumes:
+      - ./.dev/monitoring/promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - ./logs:/var/log/apps:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - coffee-rt
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./.dev/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./.dev/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./.dev/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - coffee-rt
+
+networks:
+  coffee-rt:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
