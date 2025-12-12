@@ -75,6 +75,10 @@ prometheus:
 loki:
   enabled: true
   deploymentMode: SingleBinary
+  # Allow writing to /var/loki
+  containerSecurityContext:
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
   loki:
     auth_enabled: false
     commonConfig:
@@ -94,6 +98,12 @@ loki:
     replicas: 1
     persistence:
       enabled: false
+    extraVolumes:
+      - name: data
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: data
+        mountPath: /var/loki
   read:
     replicas: 0
   write:
