@@ -43,7 +43,7 @@ variable "acr_id" {
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.28"
+  default     = "1.33"
 }
 
 # System node pool
@@ -102,6 +102,12 @@ variable "enable_autoscaling" {
   default     = true
 }
 
+variable "use_spot_instances" {
+  description = "Use spot instances for workload nodes (dev only, can be evicted)"
+  type        = bool
+  default     = false
+}
+
 # Networking
 variable "service_cidr" {
   description = "CIDR for Kubernetes services"
@@ -123,8 +129,20 @@ variable "admin_group_ids" {
 }
 
 # Monitoring
+variable "enable_monitoring" {
+  description = "Enable Log Analytics monitoring"
+  type        = bool
+  default     = true
+}
+
+variable "private_cluster_enabled" {
+  description = "Enable private cluster (API server only accessible from VNet)"
+  type        = bool
+  default     = false
+}
+
 variable "log_retention_days" {
-  description = "Log retention in days"
+  description = "Log retention in days (only used if enable_monitoring = true)"
   type        = number
   default     = 30
 }

@@ -7,13 +7,30 @@ global:
 api:
   enabled: true
 
-# Aggregator CronJob subchart
-aggregator:
-  enabled: true
-
 # Frontend subchart
 frontend:
   enabled: true
+
+
+# Aggregator CronJob subchart only for v1
+aggregator:
+  enabled: false
+
+# Stream Worker subchart only for v2
+stream-worker:
+  enabled: false
+
+# Flink subchart only for v3
+flink:
+  enabled: false
+
+# Flink job subchart (alternative to flink.job) - only for v3
+flink-job:
+  enabled: false
+
+# Kafka subchart only for v3
+kafka:
+  enabled: false
 
 # Database configuration (shared across subcharts)
 database:
@@ -31,15 +48,15 @@ redisConfig:
 
 # PostgreSQL subchart configuration
 postgresql:
-  enabled: false
+  enabled: true
 
 # Redis subchart configuration
 redis:
-  enabled: false
+  enabled: true
 
 # Prometheus configuration
 prometheus:
-  enabled: false
+  enabled: true
   server:
     persistentVolume:
       enabled: false
@@ -56,7 +73,7 @@ prometheus:
 
 # Loki configuration (log aggregation)
 loki:
-  enabled: false
+  enabled: true
   deploymentMode: SingleBinary
   loki:
     auth_enabled: false
@@ -93,7 +110,7 @@ loki:
 
 # Promtail configuration (log collector)
 promtail:
-  enabled: false
+  enabled: true
   config:
     clients:
       - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
@@ -176,7 +193,7 @@ promtail:
 
 # Grafana configuration
 grafana:
-  enabled: false
+  enabled: true
   adminUser: admin
   adminPassword: admin
   service:

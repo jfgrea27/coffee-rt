@@ -48,19 +48,23 @@ inputs = {
   vnet_id             = dependency.vnet.outputs.vnet_id
   acr_id              = dependency.acr.outputs.id
 
-  kubernetes_version = "1.28"
+  kubernetes_version = "1.33"
 
-  # Dev sizing - smaller instances
+  # Dev sizing - burstable instances for cost savings
   system_node_count   = 1
-  system_node_size    = "Standard_D2s_v3"
-  workload_node_count = 2
-  workload_node_size  = "Standard_D2s_v3"
+  system_node_size    = "Standard_B2s"
+  workload_node_count = 0  # Disabled due to vCPU quota - request increase or use different VM family
+  workload_node_size  = "Standard_B2as_v2"   # 2 vCPU, 4GB - AMD, better spot availability
   enable_autoscaling  = false
+  use_spot_instances  = true
 
   # Networking
   service_cidr   = "10.1.0.0/16"
   dns_service_ip = "10.1.0.10"
 
-  # Monitoring
-  log_retention_days = 7
+  # Disable monitoring for dev to save costs
+  enable_monitoring = false
+
+  # Private cluster - API server only accessible from VNet via bastion
+  private_cluster_enabled = true
 }

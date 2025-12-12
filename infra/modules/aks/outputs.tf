@@ -60,5 +60,5 @@ output "node_resource_group" {
 
 output "log_analytics_workspace_id" {
   description = "ID of the Log Analytics workspace"
-  value       = azurerm_log_analytics_workspace.aks.id
+  value       = var.enable_monitoring ? azurerm_log_analytics_workspace.aks[0].id : null
 }

@@ -1,0 +1,43 @@
+# Default values for flink-job
+enabled: true
+
+image:
+  repository: coffee-rt/flink-job
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+# Flink cluster configuration
+flink:
+  jobmanagerHost: ""  # Leave empty to auto-detect from release name
+  jobmanagerPort: 8081
+
+# Kafka configuration
+kafka:
+  bootstrapServers: ""  # Leave empty to auto-detect from release name
+  topic: orders
+  consumerGroup: flink-processors
+
+# PostgreSQL configuration
+postgres:
+  host: ""  # Leave empty to auto-detect from release name
+  port: 5432
+  database: coffee-rt
+  user: coffee-rt
+  schema: coffee_rt
+  secretName: ""  # Leave empty to use default
+
+# Redis configuration
+redis:
+  host: ""  # Leave empty to auto-detect from release name
+  port: 6379
+
+# Processing configuration
+windowSeconds: 1

@@ -1,0 +1,25 @@
+# AKS deployment overrides for v3
+# Usage: helm upgrade --install ... -f values.deploy.v3.yaml
+#
+# v3 Architecture: API → Kafka → Flink → PostgreSQL + Redis → Dashboard
+
+api:
+  image:
+    pullPolicy: Always
+
+# v3-specific: Enable Kafka
+kafka:
+  enabled: true
+
+# v3-specific: Enable Flink
+flink:
+  enabled: true
+  taskmanager:
+    taskSlots: 4  # Match docker-compose v3
+  job:
+    image:
+      pullPolicy: Always
+
+frontend:
+  image:
+    pullPolicy: Always

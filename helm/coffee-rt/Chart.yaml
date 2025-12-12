@@ -2,7 +2,7 @@ apiVersion: v2
 name: coffee-rt
 description: A Helm chart for the Coffee RT application
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "1.0.0"
 
 dependencies:
@@ -21,6 +21,9 @@ dependencies:
   - name: flink
     version: "0.1.0"
     condition: flink.enabled
+  - name: flink-job
+    version: "0.1.0"
+    condition: flink-job.enabled
   - name: postgresql
     version: "16.4.1"
     repository: "https://charts.bitnami.com/bitnami"

@@ -12,3 +12,8 @@ output "aks_subnet_id" {
   description = "ID of the AKS subnet"
   value       = azurerm_subnet.aks.id
 }
+
+output "bastion_subnet_id" {
+  description = "ID of the bastion subnet"
+  value       = var.enable_bastion_subnet ? azurerm_subnet.bastion[0].id : null
+}

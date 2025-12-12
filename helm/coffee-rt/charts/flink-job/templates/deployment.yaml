@@ -1,0 +1,63 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "flink-job.fullname" . }}
+  labels:
+    {{- include "flink-job.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "flink-job.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "flink-job.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: wait-for-jobmanager
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z {{ include "flink-job.jobmanagerHost" . }} {{ .Values.flink.jobmanagerPort }}; do echo waiting for jobmanager; sleep 5; done']
+      containers:
+        - name: flink-job
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sleep 10 &&
+              flink run -m {{ include "flink-job.jobmanagerHost" . }}:{{ .Values.flink.jobmanagerPort }} /opt/flink/usrlib/coffee-rt-flink.jar
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "{{ include "flink-job.kafkaBootstrapServers" . }}"
+            - name: KAFKA_TOPIC
+              value: {{ .Values.kafka.topic }}
+            - name: KAFKA_CONSUMER_GROUP
+              value: {{ .Values.kafka.consumerGroup }}
+            - name: POSTGRES_HOST
+              value: "{{ include "flink-job.postgresHost" . }}"
+            - name: POSTGRES_PORT
+              value: "{{ .Values.postgres.port }}"
+            - name: POSTGRES_DB
+              value: "{{ .Values.postgres.database }}"
+            - name: POSTGRES_USER
+              value: "{{ .Values.postgres.user }}"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "flink-job.dbSecretName" . }}
+                  key: password
+            - name: POSTGRES_SCHEMA
+              value: "{{ .Values.postgres.schema }}"
+            - name: REDIS_HOST
+              value: "{{ include "flink-job.redisHost" . }}"
+            - name: REDIS_PORT
+              value: "{{ .Values.redis.port }}"
+            - name: WINDOW_SECONDS
+              value: "{{ .Values.windowSeconds }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      restartPolicy: Always
+{{- end }}

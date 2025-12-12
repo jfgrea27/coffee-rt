@@ -2,6 +2,11 @@
 colima_profile := env_var_or_default("COLIMA_PROFILE", "default")
 colima := "colima --profile " + colima_profile
 
+# Azure settings
+azure_rg := "coffee-rt-dev-rg"
+azure_bastion := "coffee-rt-dev-bastion"
+azure_aks := "coffee-rt-dev-aks"
+
 dev-setup:
     uv pip install -e ".[dev,lint,test]"
     # pre-commit
@@ -389,3 +394,22 @@ test-suite-all build="true" replicas="1":
     -open benchmark-results/v1_standard.html benchmark-results/v1_spike.html benchmark-results/v1_e2e.html benchmark-results/v1_breakpoint.html
     -open benchmark-results/v2_standard.html benchmark-results/v2_spike.html benchmark-results/v2_e2e.html benchmark-results/v2_breakpoint.html
     -open benchmark-results/v3_standard.html benchmark-results/v3_spike.html benchmark-results/v3_e2e.html benchmark-results/v3_breakpoint.html
+
+## Azure Infrastructure
+
+# Connect to bastion VM via SSH (optionally with port forwarding)
+# Usage: just connect-bastion        # plain SSH
+#        just connect-bastion 8080   # forward local:8080 -> bastion:8080
+connect-bastion port="":
+    #!/usr/bin/env bash
+    BASTION_IP=$(az vm list-ip-addresses \
+        --resource-group {{azure_rg}} \
+        --name {{azure_bastion}} \
+        --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)
+    if [ -n "{{port}}" ]; then
+        echo "Connecting to bastion at $BASTION_IP with port forward localhost:{{port}} -> bastion:{{port}}..."
+        ssh -L {{port}}:localhost:{{port}} -i ~/.ssh/id_rsa_azure azureuser@$BASTION_IP
+    else
+        echo "Connecting to bastion at $BASTION_IP..."
+        ssh -i ~/.ssh/id_rsa_azure azureuser@$BASTION_IP
+    fi

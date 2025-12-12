@@ -35,3 +35,15 @@ variable "aks_subnet_cidr" {
   type        = string
   default     = "10.0.0.0/20"
 }
+
+variable "enable_bastion_subnet" {
+  description = "Enable bastion subnet for jump box"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_cidr" {
+  description = "CIDR block for bastion subnet"
+  type        = string
+  default     = "10.0.255.0/24"
+}

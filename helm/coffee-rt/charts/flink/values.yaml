@@ -36,6 +36,7 @@ taskmanager:
 
 # Flink job configuration
 job:
+  enabled: true  # Set to false if using separate flink-job chart
   image:
     repository: coffee-rt/flink-job
     tag: latest

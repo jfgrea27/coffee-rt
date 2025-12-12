@@ -18,15 +18,15 @@ resource "azurerm_kubernetes_cluster" "main" {
   tags                = var.tags
 
   default_node_pool {
-    name                = "system"
-    node_count          = var.system_node_count
-    vm_size             = var.system_node_size
-    vnet_subnet_id      = var.aks_subnet_id
-    os_disk_size_gb     = 50
-    os_disk_type        = "Managed"
-    max_pods            = 110
-    min_count           = var.enable_autoscaling ? var.system_node_min : null
-    max_count           = var.enable_autoscaling ? var.system_node_max : null
+    name            = "system"
+    node_count      = var.system_node_count
+    vm_size         = var.system_node_size
+    vnet_subnet_id  = var.aks_subnet_id
+    os_disk_size_gb = 30
+    os_disk_type    = "Managed"
+    max_pods        = 110
+    min_count       = var.enable_autoscaling ? var.system_node_min : null
+    max_count       = var.enable_autoscaling ? var.system_node_max : null
 
     node_labels = {
       "nodepool" = "system"
@@ -51,7 +51,11 @@ resource "azurerm_kubernetes_cluster" "main" {
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
 
+  # Private cluster - API server only accessible from VNet
+  private_cluster_enabled = var.private_cluster_enabled
+
   azure_active_directory_role_based_access_control {
+    managed                = true
     azure_rbac_enabled     = true
     admin_group_object_ids = var.admin_group_ids
   }
@@ -60,8 +64,11 @@ resource "azurerm_kubernetes_cluster" "main" {
     secret_rotation_enabled = true
   }
 
-  oms_agent {
-    log_analytics_workspace_id = azurerm_log_analytics_workspace.aks.id
+  dynamic "oms_agent" {
+    for_each = var.enable_monitoring ? [1] : []
+    content {
+      log_analytics_workspace_id = azurerm_log_analytics_workspace.aks[0].id
+    }
   }
 
   lifecycle {
@@ -71,24 +78,32 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 }
 
-# Workload node pool - for application workloads
+# Workload node pool - for application workloads (optional)
 resource "azurerm_kubernetes_cluster_node_pool" "workload" {
+  count = var.workload_node_count > 0 ? 1 : 0
+
   name                  = "workload"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
   vm_size               = var.workload_node_size
   node_count            = var.workload_node_count
   vnet_subnet_id        = var.aks_subnet_id
-  os_disk_size_gb       = 100
+  os_disk_size_gb       = 30
   os_disk_type          = "Managed"
   max_pods              = 110
   min_count             = var.enable_autoscaling ? var.workload_node_min : null
   max_count             = var.enable_autoscaling ? var.workload_node_max : null
 
+  # Spot instances for cost savings (dev only)
+  priority        = var.use_spot_instances ? "Spot" : "Regular"
+  eviction_policy = var.use_spot_instances ? "Delete" : null
+  spot_max_price  = var.use_spot_instances ? -1 : null # -1 = pay up to on-demand price
+
   node_labels = {
-    "nodepool" = "workload"
+    "nodepool"                              = "workload"
+    "kubernetes.azure.com/scalesetpriority" = var.use_spot_instances ? "spot" : "regular"
   }
 
-  node_taints = []
+  node_taints = var.use_spot_instances ? ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule"] : []
 
   tags = var.tags
 
@@ -99,8 +114,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "workload" {
   }
 }
 
-# Log Analytics Workspace for monitoring
+# Log Analytics Workspace for monitoring (optional)
 resource "azurerm_log_analytics_workspace" "aks" {
+  count = var.enable_monitoring ? 1 : 0
+
   name                = "${var.project}-${var.environment}-logs"
   location            = var.location
   resource_group_name = var.resource_group_name

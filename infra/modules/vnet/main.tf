@@ -59,3 +59,13 @@ resource "azurerm_subnet_network_security_group_association" "aks" {
   subnet_id                 = azurerm_subnet.aks.id
   network_security_group_id = azurerm_network_security_group.aks.id
 }
+
+# Bastion subnet - for jump box VM
+resource "azurerm_subnet" "bastion" {
+  count = var.enable_bastion_subnet ? 1 : 0
+
+  name                 = "${var.project}-${var.environment}-bastion-subnet"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [var.bastion_subnet_cidr]
+}

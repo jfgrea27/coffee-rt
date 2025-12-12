@@ -29,4 +29,8 @@ inputs = {
   location            = dependency.rg.outputs.location
   vnet_cidr           = "10.10.0.0/16"
   aks_subnet_cidr     = "10.10.0.0/20"
+
+  # Bastion subnet for jump box
+  enable_bastion_subnet = true
+  bastion_subnet_cidr   = "10.10.255.0/24"
 }
