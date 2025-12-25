@@ -2,6 +2,7 @@ package com.coffeert;
 
 import com.coffeert.function.OrderAggregator;
 import com.coffeert.model.CoffeeOrder;
+import com.coffeert.sink.RecentOrdersSink;
 import com.coffeert.sink.RedisMetricsSink;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -143,6 +144,11 @@ public final class CoffeeOrderJob {
                 .aggregate(new OrderAggregator())
                 .addSink(new RedisMetricsSink(redisHost, redisPort))
                 .name("Redis Metrics Sink");
+
+        // Sink 3: Write recent orders to Redis for dashboard display
+        v3Orders
+                .addSink(new RecentOrdersSink(redisHost, redisPort))
+                .name("Recent Orders Sink");
 
         // Execute the job
         env.execute("Coffee Order Processing (v3)");

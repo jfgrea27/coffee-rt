@@ -69,14 +69,3 @@ Redis host - defaults to redis subchart service name
 {{- printf "%s-redis-master" .Release.Name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Database secret name
-*/}}
-{{- define "coffee-rt.databaseSecretName" -}}
-{{- if .Values.database.existingSecret }}
-{{- .Values.database.existingSecret }}
-{{- else }}
-{{- printf "%s-db-secret" .Release.Name }}
-{{- end }}
-{{- end }}

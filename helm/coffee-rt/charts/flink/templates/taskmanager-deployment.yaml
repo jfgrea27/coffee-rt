@@ -30,13 +30,14 @@ spec:
           livenessProbe:
             tcpSocket:
               port: rpc
-            initialDelaySeconds: 30
-            periodSeconds: 10
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
           readinessProbe:
             tcpSocket:
               port: rpc
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.taskmanager.resources | nindent 12 }}
           volumeMounts:

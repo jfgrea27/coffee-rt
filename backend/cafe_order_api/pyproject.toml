@@ -3,7 +3,7 @@ name = "cafe-order-api"
 version = "0.1.0"
 description = "Cafe Order API"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "coffee-rt-shared",
     "fastapi>=0.104.0",
@@ -12,7 +12,7 @@ dependencies = [
     "httpx>=0.25.0",
     "sqlalchemy>=2.0.0",
     "redis>=7.1.0",
-    "psycopg[binary,pool]>=3.1.0",
+    "psycopg[binary,pool]>=3.1.0,<3.3.0",
     "websockets>=12.0",
     "prometheus-client>=0.21.0",
     "aiokafka>=0.10.0",

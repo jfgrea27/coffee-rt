@@ -6,6 +6,9 @@ version: 0.2.0
 appVersion: "1.0.0"
 
 dependencies:
+  - name: db-migrate
+    version: "0.1.0"
+    condition: db-migrate.enabled
   - name: api
     version: "0.1.0"
     condition: api.enabled
@@ -25,17 +28,16 @@ dependencies:
     version: "0.1.0"
     condition: flink-job.enabled
   - name: postgresql
-    version: "16.4.1"
+    version: "18.1.13"
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   - name: redis
-    version: "20.6.2"
+    version: "24.0.7"
     repository: "https://charts.bitnami.com/bitnami"
     condition: redis.enabled
-  - name: kafka
-    version: "31.1.0"
-    repository: "https://charts.bitnami.com/bitnami"
-    condition: kafka.enabled
+  - name: kafka-confluent
+    version: "0.1.0"
+    condition: kafka-confluent.enabled
   - name: prometheus
     version: "27.50.1"
     repository: "https://prometheus-community.github.io/helm-charts"

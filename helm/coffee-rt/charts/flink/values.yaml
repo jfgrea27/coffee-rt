@@ -4,12 +4,13 @@ enabled: true
 # Flink image configuration
 image:
   repository: flink
-  tag: "1.18-java11"
+  tag: "1.18-java17"
   pullPolicy: IfNotPresent
 
 # JobManager configuration
 jobmanager:
   replicas: 1
+  memoryProcessSize: 1g  # Flink format (not Kubernetes)
   resources:
     limits:
       cpu: 500m
@@ -26,17 +27,19 @@ jobmanager:
 taskmanager:
   replicas: 1
   taskSlots: 2
+  memoryProcessSize: 1g  # Flink format (not Kubernetes)
   resources:
     limits:
       cpu: 500m
-      memory: 1Gi
+      memory: 1280Mi
     requests:
       cpu: 100m
-      memory: 512Mi
+      memory: 1024Mi
 
-# Flink job configuration
+# Flink job configuration (disabled - use separate flink-job subchart)
 job:
-  enabled: true  # Set to false if using separate flink-job chart
+  enabled: false
+  logLevel: INFO  # Log level for com.coffeert package (DEBUG, INFO, WARN, ERROR)
   image:
     repository: coffee-rt/flink-job
     tag: latest
@@ -52,3 +55,15 @@ job:
     topic: orders
     consumerGroup: flink-processors
   windowSeconds: 1
+
+database:
+  host: ""
+  port: 5432
+  name: coffee-rt
+  user: coffee-rt
+  schema: coffee_rt
+  password: coffee-rt_password
+
+redis:
+  host: ""
+  port: 6379

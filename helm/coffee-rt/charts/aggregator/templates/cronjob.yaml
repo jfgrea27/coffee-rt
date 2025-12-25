@@ -58,10 +58,7 @@ spec:
                 - name: POSTGRES_SCHEMA
                   value: {{ .Values.database.schema | quote }}
                 - name: POSTGRES_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ include "aggregator.databaseSecretName" . }}
-                      key: POSTGRES_PASSWORD
+                  value: {{ .Values.database.password | quote }}
                 - name: REDIS_HOST
                   value: {{ include "aggregator.redisHost" . | quote }}
                 - name: REDIS_PORT

@@ -9,7 +9,7 @@ APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 
 LOG_FILE = os.getenv("LOG_FILE", "logs/cafe_order_api.log")
 
-DASHBOARD_UPDATE_INTERVAL = int(os.getenv("DASHBOARD_UPDATE_INTERVAL", 30))  # seconds
+DASHBOARD_UPDATE_INTERVAL = int(os.getenv("DASHBOARD_UPDATE_INTERVAL", 10))  # seconds
 
 # Database configuration
 POSTGRES_USER = os.getenv("POSTGRES_USER", "coffee-rt")

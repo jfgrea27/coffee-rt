@@ -26,7 +26,7 @@ services:
     container_name: db-migrate
     build:
       context: .
-      dockerfile: .dev/db-migrate/Dockerfile
+      dockerfile: backend/db/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy

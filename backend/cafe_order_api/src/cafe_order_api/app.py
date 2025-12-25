@@ -276,29 +276,60 @@ async def readiness_check() -> HealthResponse:
                     pass
             app.state.redis_connection = redis_connection
 
+    # Attempt to reconnect to Kafka if enabled and not ready
+    if KAFKA_ENABLED and (not app.state.kafka_ready or app.state.kafka_error):
+        logger.info("Kafka producer not ready, attempting to reconnect...")
+        kafka_producer = await _init_kafka_producer(app)
+        if kafka_producer:
+            # Stop old producer if it exists
+            if app.state.kafka_producer:
+                try:
+                    await app.state.kafka_producer.stop()
+                except Exception:
+                    pass
+            app.state.kafka_producer = kafka_producer
+
+    connections = {
+        "database": {
+            "db_url": DATABASE_URL_SANITIZED,
+            "ready": app.state.db_ready,
+            "error": app.state.db_error,
+        },
+        "redis": {
+            "redis_url": REDIS_URL_SANITIZED,
+            "ready": app.state.redis_ready,
+            "error": app.state.redis_error,
+        },
+    }
+
+    # Include Kafka status if enabled
+    if KAFKA_ENABLED:
+        connections["kafka"] = {
+            "bootstrap_servers": KAFKA_BOOTSTRAP_SERVERS,
+            "ready": app.state.kafka_ready,
+            "error": app.state.kafka_error,
+        }
+
+    # Determine overall status based on all connections
+    db_ok = app.state.db_ready and not app.state.db_error
+    redis_ok = app.state.redis_ready and not app.state.redis_error
+    kafka_ok = not KAFKA_ENABLED or (app.state.kafka_ready and not app.state.kafka_error)
+    all_ok = db_ok and redis_ok and kafka_ok
+
     res = HealthResponse(
-        status="ok",
+        status="ok" if all_ok else "error",
         service=APP_TITLE,
         version=APP_VERSION,
-        connections={
-            "database": {
-                "db_url": DATABASE_URL_SANITIZED,
-                "ready": app.state.db_ready,
-                "error": app.state.db_error,
-            },
-            "redis": {
-                "redis_url": REDIS_URL_SANITIZED,
-                "ready": app.state.redis_ready,
-                "error": app.state.redis_error,
-            },
-        },
+        connections=connections,
     )
     logger.info(f"Readiness check: {res.model_dump_json()}")
 
-    if not app.state.db_ready or app.state.db_error:
+    if not db_ok:
         raise HTTPException(status_code=503, detail="Database connection not available")
-    if not app.state.redis_ready or app.state.redis_error:
+    if not redis_ok:
         raise HTTPException(status_code=503, detail="Redis connection not available")
+    if not kafka_ok:
+        raise HTTPException(status_code=503, detail="Kafka producer not available")
 
     return res
 

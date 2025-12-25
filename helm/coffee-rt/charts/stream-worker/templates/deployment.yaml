@@ -50,10 +50,7 @@ spec:
             - name: POSTGRES_SCHEMA
               value: {{ .Values.database.schema | quote }}
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "stream-worker.databaseSecretName" . }}
-                  key: POSTGRES_PASSWORD
+              value: {{ .Values.database.password | quote }}
             - name: REDIS_URL
               value: "redis://{{ include "stream-worker.redisHost" . }}:{{ .Values.redis.port }}"
             - name: STREAM_NAME

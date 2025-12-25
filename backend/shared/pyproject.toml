@@ -2,7 +2,7 @@
 name = "coffee-rt-shared"
 version = "0.1.0"
 description = "Shared models for Coffee RT services"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = ["pydantic>=2.0.0"]
 
 [project.optional-dependencies]

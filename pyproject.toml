@@ -3,7 +3,7 @@ name = "coffee-rt-dev"
 version = "0.1.0"
 description = "Coffee RT - Development environment"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 dependencies = [
     "pre-commit>=4.4.0",
@@ -83,7 +83,7 @@ select = [
 known-first-party = ["cafe-order-api"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 check_untyped_defs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
@@ -109,8 +109,4 @@ exclude_lines = [
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-    "pytest-asyncio>=1.3.0",
-    "ruff>=0.14.0,<0.15.0",
-]
+dev = ["pytest>=9.0.2", "pytest-asyncio>=1.3.0", "ruff>=0.14.0,<0.15.0"]

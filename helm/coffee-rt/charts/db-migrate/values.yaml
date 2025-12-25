@@ -1,8 +1,8 @@
-# Default values for stream-worker.
-replicaCount: 1
+# Default values for db-migrate.
+# This is a Kubernetes Job that runs Alembic migrations.
 
 image:
-  repository: coffee-rt/stream-worker
+  repository: coffee-rt/db-migrate
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -16,11 +16,9 @@ serviceAccount:
   annotations: {}
   name: ""
 
-podAnnotations:
-  prometheus.io/scrape: "false"
+podAnnotations: {}
 podLabels:
-  app.kubernetes.io/component: stream-worker
-  monitoring: enabled
+  app.kubernetes.io/component: db-migrate
 
 podSecurityContext: {}
 
@@ -34,34 +32,20 @@ resources:
     cpu: 50m
     memory: 64Mi
 
+# Job configuration
+backoffLimit: 3
+ttlSecondsAfterFinished: 300
+activeDeadlineSeconds: 120
+
 nodeSelector: {}
 tolerations: []
 affinity: {}
 
 # Database configuration
 database:
-  host: ""
+  host: ""  # Leave empty to use subchart default (release-name-postgresql)
   port: 5432
   name: coffee-rt
   user: coffee-rt
   schema: coffee_rt
   password: coffee-rt_password
-
-# Redis configuration
-redis:
-  host: ""
-  port: 6379
-
-# Redis Streams configuration
-stream:
-  name: orders:stream
-  consumerGroup: order-workers
-
-# Batch configuration
-batch:
-  size: 100
-  timeoutMs: 2000
-
-# Logging configuration
-logging:
-  file: /app/logs/stream-worker.log

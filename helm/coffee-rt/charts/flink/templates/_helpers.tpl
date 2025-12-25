@@ -63,3 +63,37 @@ TaskManager selector labels
 {{ include "flink.selectorLabels" . }}
 app.kubernetes.io/component: taskmanager
 {{- end }}
+
+
+{{/*
+Database host - defaults to postgresql subchart service name
+*/}}
+{{- define "flink.databaseHost" -}}
+{{- if .Values.database.host }}
+{{- .Values.database.host }}
+{{- else }}
+{{- printf "%s-postgresql" .Release.Name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Redis host - defaults to redis subchart service name
+*/}}
+{{- define "flink.redisHost" -}}
+{{- if .Values.redis.host }}
+{{- .Values.redis.host }}
+{{- else }}
+{{- printf "%s-redis-master" .Release.Name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Kafka bootstrap servers - defaults to kafka subchart service name
+*/}}
+{{- define "flink.kafkaBootstrapServers" -}}
+{{- if .Values.kafka.bootstrapServers }}
+{{- .Values.kafka.bootstrapServers }}
+{{- else }}
+{{- printf "%s-kafka:9092" .Release.Name }}
+{{- end }}
+{{- end }}

@@ -80,12 +80,13 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        # Create schemas if they don't exist
-        connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {ALEMBIC_SCHEMA}"))
-        connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {APP_SCHEMA}"))
-        connection.commit()
+    # Create schemas before migrations using autocommit
+    with connectable.connect() as schema_conn:
+        schema_conn = schema_conn.execution_options(isolation_level="AUTOCOMMIT")
+        schema_conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {ALEMBIC_SCHEMA}"))
+        schema_conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {APP_SCHEMA}"))
 
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

@@ -8,10 +8,15 @@ data:
   flink-conf.yaml: |
     jobmanager.rpc.address: {{ include "flink.fullname" . }}-jobmanager
     jobmanager.rpc.port: 6123
-    jobmanager.memory.process.size: {{ .Values.jobmanager.resources.limits.memory }}
-    taskmanager.memory.process.size: {{ .Values.taskmanager.resources.limits.memory }}
+    jobmanager.memory.process.size: {{ .Values.jobmanager.memoryProcessSize }}
+    taskmanager.memory.process.size: {{ .Values.taskmanager.memoryProcessSize }}
     taskmanager.numberOfTaskSlots: {{ .Values.taskmanager.taskSlots }}
+    taskmanager.rpc.port: 6122
+    taskmanager.data.port: 6121
     parallelism.default: 1
+    blob.server.port: 6124
+    # Java 17+ module access for Kryo serialization
+    env.java.opts.all: --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED
 
   log4j-console.properties: |
     rootLogger.level = INFO
@@ -24,3 +29,6 @@ data:
     logger.flink.level = INFO
     logger.kafka.name = org.apache.kafka
     logger.kafka.level = WARN
+    # Application logging
+    logger.coffeert.name = com.coffeert
+    logger.coffeert.level = {{ .Values.job.logLevel | default "INFO" }}

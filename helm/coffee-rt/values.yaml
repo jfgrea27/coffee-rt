@@ -3,9 +3,29 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
+# Database Migration Job subchart
+db-migrate:
+  enabled: false
+  database:
+    host: ""  # Leave empty to use subchart default (release-name-postgresql)
+    port: 5432
+    name: coffee-rt
+    user: coffee-rt
+    schema: coffee_rt
+    password: coffee-rt_password
+
 # API Service subchart
 api:
   enabled: true
+  database:
+    host: ""  # Leave empty to use subchart default (release-name-postgresql)
+    port: 5432
+    name: coffee-rt
+    user: coffee-rt
+    schema: coffee_rt
+    password: coffee-rt_password
+
+  dashboardUpdateInterval: 5
 
 # Frontend subchart
 frontend:
@@ -15,10 +35,22 @@ frontend:
 # Aggregator CronJob subchart only for v1
 aggregator:
   enabled: false
+  database:
+    host: ""
+    port: 5432
+    name: coffee-rt
+    user: coffee-rt
+    schema: coffee_rt
 
 # Stream Worker subchart only for v2
 stream-worker:
   enabled: false
+  database:
+    host: ""
+    port: 5432
+    name: coffee-rt
+    user: coffee-rt
+    schema: coffee_rt
 
 # Flink subchart only for v3
 flink:
@@ -28,31 +60,30 @@ flink:
 flink-job:
   enabled: false
 
-# Kafka subchart only for v3
-kafka:
+# Kafka Confluent subchart only for v3
+kafka-confluent:
   enabled: false
 
 # Database configuration (shared across subcharts)
-database:
-  host: ""  # Leave empty to use subchart default
-  port: 5432
-  name: coffee-rt
-  user: coffee-rt
-  schema: coffee_rt
-  password: ""  # Set via existingSecret or values.dev.yaml
+postgresql:
+  enabled: true
+  auth:
+    username: coffee-rt
+    password: coffee-rt_password
+    database: coffee-rt
 
-# Redis configuration (shared across subcharts)
+
+# s configuration (shared across subcharts)
 redisConfig:
   host: ""  # Leave empty to use subchart default
   port: 6379
 
-# PostgreSQL subchart configuration
-postgresql:
-  enabled: true
 
 # Redis subchart configuration
 redis:
   enabled: true
+  auth:
+    enabled: false
 
 # Prometheus configuration
 prometheus:

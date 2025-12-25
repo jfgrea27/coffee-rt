@@ -74,8 +74,8 @@ Kafka bootstrap servers
 PostgreSQL host
 */}}
 {{- define "flink-job.postgresHost" -}}
-{{- if .Values.postgres.host }}
-{{- .Values.postgres.host }}
+{{- if .Values.database.host }}
+{{- .Values.database.host }}
 {{- else }}
 {{- printf "%s-postgresql" .Release.Name }}
 {{- end }}
@@ -93,12 +93,12 @@ Redis host
 {{- end }}
 
 {{/*
-DB Secret name
+DB Secret name - defaults to postgresql subchart secret name
 */}}
 {{- define "flink-job.dbSecretName" -}}
-{{- if .Values.postgres.secretName }}
-{{- .Values.postgres.secretName }}
+{{- if .Values.database.secretName }}
+{{- .Values.database.secretName }}
 {{- else }}
-{{- printf "%s-db-secret" .Release.Name }}
+{{- printf "%s-postgresql" .Release.Name }}
 {{- end }}
 {{- end }}

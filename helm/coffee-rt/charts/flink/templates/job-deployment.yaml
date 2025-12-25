@@ -40,24 +40,21 @@ spec:
             - name: KAFKA_CONSUMER_GROUP
               value: {{ .Values.job.kafka.consumerGroup }}
             - name: POSTGRES_HOST
-              value: "{{ .Release.Name }}-postgresql"
+              value: {{ include "flink.databaseHost" . | quote }}
             - name: POSTGRES_PORT
-              value: "5432"
+              value: {{ .Values.database.port | quote }}
             - name: POSTGRES_DB
-              value: "coffee-rt"
+              value: {{ .Values.database.name | quote }}
             - name: POSTGRES_USER
-              value: "coffee-rt"
+              value: {{ .Values.database.user | quote }}
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-db-secret
-                  key: password
+              value: {{ .Values.database.password | quote }}
             - name: POSTGRES_SCHEMA
-              value: "coffee_rt"
+              value: {{ .Values.database.schema | quote }}
             - name: REDIS_HOST
-              value: "{{ .Release.Name }}-redis-master"
+              value: {{ include "flink.redisHost" . | quote }}
             - name: REDIS_PORT
-              value: "6379"
+              value: {{ .Values.redis.port | quote }}
             - name: WINDOW_SECONDS
               value: "{{ .Values.job.windowSeconds }}"
           resources:

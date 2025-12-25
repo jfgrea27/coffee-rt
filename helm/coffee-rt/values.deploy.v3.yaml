@@ -1,15 +1,16 @@
-# AKS deployment overrides for v3
-# Usage: helm upgrade --install ... -f values.deploy.v3.yaml
-#
-# v3 Architecture: API → Kafka → Flink → PostgreSQL + Redis → Dashboard
+# v3-specific: Enable Kafka with Confluent images
 
-api:
-  image:
-    pullPolicy: Always
-
-# v3-specific: Enable Kafka
-kafka:
+db-migrate:
   enabled: true
+
+kafka-confluent:
+  enabled: true
+
+# Enable Kafka in API for v3
+api:
+  kafka:
+    enabled: true
+    bootstrapServers: "coffee-rt-kafka:9092"
 
 # v3-specific: Enable Flink
 flink:
@@ -17,9 +18,8 @@ flink:
   taskmanager:
     taskSlots: 4  # Match docker-compose v3
   job:
-    image:
-      pullPolicy: Always
+    logLevel: DEBUG  # More verbose logging for debugging
 
-frontend:
-  image:
-    pullPolicy: Always
+flink-job:
+  enabled: true
+  logLevel: DEBUG

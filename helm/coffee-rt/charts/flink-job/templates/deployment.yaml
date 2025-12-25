@@ -27,8 +27,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              sleep 10 &&
-              flink run -m {{ include "flink-job.jobmanagerHost" . }}:{{ .Values.flink.jobmanagerPort }} /opt/flink/usrlib/coffee-rt-flink.jar
+              sleep 10 && flink run -m {{ include "flink-job.jobmanagerHost" . }}:{{ .Values.flink.jobmanagerPort }} /opt/flink/usrlib/coffee-rt-flink.jar
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: "{{ include "flink-job.kafkaBootstrapServers" . }}"
@@ -39,24 +38,23 @@ spec:
             - name: POSTGRES_HOST
               value: "{{ include "flink-job.postgresHost" . }}"
             - name: POSTGRES_PORT
-              value: "{{ .Values.postgres.port }}"
+              value: "{{ .Values.database.port }}"
             - name: POSTGRES_DB
-              value: "{{ .Values.postgres.database }}"
+              value: "{{ .Values.database.name }}"
             - name: POSTGRES_USER
-              value: "{{ .Values.postgres.user }}"
+              value: "{{ .Values.database.user }}"
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "flink-job.dbSecretName" . }}
-                  key: password
+              value: {{ .Values.database.password | quote }}
             - name: POSTGRES_SCHEMA
-              value: "{{ .Values.postgres.schema }}"
+              value: "{{ .Values.database.schema }}"
             - name: REDIS_HOST
               value: "{{ include "flink-job.redisHost" . }}"
             - name: REDIS_PORT
               value: "{{ .Values.redis.port }}"
             - name: WINDOW_SECONDS
               value: "{{ .Values.windowSeconds }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       restartPolicy: Always

@@ -2,8 +2,8 @@
 name = "stream-worker"
 version = "0.1.0"
 description = "Redis Streams worker - consumes orders and writes to PostgreSQL"
-requires-python = ">=3.13"
-dependencies = ["coffee-rt-shared", "redis>=7.1.0", "psycopg[binary]>=3.1.0"]
+requires-python = ">=3.12"
+dependencies = ["coffee-rt-shared", "redis>=7.1.0", "psycopg[binary]>=3.1.0,<3.3.0"]
 
 [project.scripts]
 stream-worker = "stream_worker.main:main"

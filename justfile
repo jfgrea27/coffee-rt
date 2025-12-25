@@ -132,11 +132,17 @@ helm-build-images:
     {{colima}} nerdctl -- build -t coffee-rt/cafe-order-api:latest -f backend/cafe_order_api/Dockerfile .
     {{colima}} nerdctl -- build -t coffee-rt/cafe-order-aggregator:latest -f backend/cafe_order_aggregator/Dockerfile.cron .
     {{colima}} nerdctl -- build -t coffee-rt/cafe-dashboard:latest -f frontend/Dockerfile frontend/
+    {{colima}} nerdctl -- build -t coffee-rt/stream-worker:latest -f backend/stream_worker/Dockerfile .
+    {{colima}} nerdctl -- build -t coffee-rt/flink-job:latest -f flink/coffee-rt-flink/Dockerfile flink/coffee-rt-flink/
+    {{colima}} nerdctl -- build -t coffee-rt/db-migrate:latest -f backend/db/Dockerfile .
 
 helm-import-images: helm-build-images
     {{colima}} nerdctl -- save coffee-rt/cafe-order-api:latest | {{colima}} nerdctl -- -n k8s.io load
     {{colima}} nerdctl -- save coffee-rt/cafe-order-aggregator:latest | {{colima}} nerdctl -- -n k8s.io load
     {{colima}} nerdctl -- save coffee-rt/cafe-dashboard:latest | {{colima}} nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/stream-worker:latest | {{colima}} nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/flink-job:latest | {{colima}} nerdctl -- -n k8s.io load
+    {{colima}} nerdctl -- save coffee-rt/db-migrate:latest | {{colima}} nerdctl -- -n k8s.io load
 
 helm-list-images:
     {{colima}} nerdctl -- -n k8s.io images | grep -E "coffee-rt|redis|postgresql"
@@ -164,20 +170,21 @@ helm-uninstall:
     helm uninstall coffee-rt
 
 
-# v1: Direct DB writes + cron aggregation (helm)
-helm-deploy-v1: helm-import-images helm-pull-external-images helm-dep-update
+helm-create-namespace:
     kubectl create namespace coffee-ns --dry-run=client -o yaml | kubectl apply -f -
-    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.v1.yaml -n coffee-ns
+
+# v1: Direct DB writes + cron aggregation (helm)
+helm-deploy-v1: helm-import-images helm-pull-external-images helm-dep-update helm-create-namespace
+    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.deploy.v1.yaml -n coffee-ns
 
 # v2: Redis Streams + stream-worker (helm)
-helm-deploy-v2: helm-import-images helm-pull-external-images helm-dep-update
-    kubectl create namespace coffee-ns --dry-run=client -o yaml | kubectl apply -f -
-    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.v2.yaml -n coffee-ns
+helm-deploy-v2: helm-import-images helm-pull-external-images helm-dep-update helm-create-namespace
+    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.deploy.v2.yaml -n coffee-ns
 
 # v3: Kafka + Flink (helm)
-helm-deploy-v3: helm-import-images helm-pull-external-images helm-dep-update
-    kubectl create namespace coffee-ns --dry-run=client -o yaml | kubectl apply -f -
-    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.v3.yaml -n coffee-ns
+# helm-deploy-v3: helm-import-images helm-pull-external-images helm-dep-update helm-create-namespace
+helm-deploy-v3:
+    helm upgrade --install coffee-rt ./helm/coffee-rt -f ./helm/coffee-rt/values.deploy.v3.yaml -n coffee-ns
 
 ## Benchmarks
 

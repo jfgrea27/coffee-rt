@@ -61,16 +61,6 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
-{{/*
-Database secret name
-*/}}
-{{- define "api.databaseSecretName" -}}
-{{- if .Values.database.secretName }}
-{{- .Values.database.secretName }}
-{{- else }}
-{{- printf "%s-db-secret" .Release.Name }}
-{{- end }}
-{{- end }}
 
 {{/*
 Database host - defaults to postgresql subchart service name

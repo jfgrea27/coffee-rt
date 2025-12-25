@@ -116,10 +116,6 @@ frontend:
       cpu: 50m
       memory: 64Mi
 
-# Database configuration for secret creation
-database:
-  password: coffee-rt_password
-
 # PostgreSQL subchart configuration (Bitnami)
 postgresql:
   enabled: true
@@ -187,23 +183,28 @@ redis:
       enabled: true
       size: 1Gi
 
-# Kafka subchart configuration (Bitnami) - KRaft mode (no Zookeeper)
+# Kafka subchart configuration (Bitnami) - Zookeeper mode
 kafka:
   enabled: true
+  kraft:
+    enabled: false
+  zookeeper:
+    enabled: true
+    replicaCount: 1
+    persistence:
+      enabled: false
   listeners:
     client:
-      protocol: PLAINTEXT
-    controller:
       protocol: PLAINTEXT
     interbroker:
       protocol: PLAINTEXT
   controller:
+    replicaCount: 0
+  broker:
     replicaCount: 1
-  kraft:
-    enabled: true
-  persistence:
-    enabled: true
-    size: 2Gi
+    persistence:
+      enabled: true
+      size: 2Gi
 
 # Prometheus configuration
 prometheus:

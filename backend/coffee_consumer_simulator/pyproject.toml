@@ -3,7 +3,7 @@ name = "coffee-consumer-simulator"
 version = "0.1.0"
 description = "Locust-based simulator for coffee order load testing"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "locust>=2.32.0",
 ]

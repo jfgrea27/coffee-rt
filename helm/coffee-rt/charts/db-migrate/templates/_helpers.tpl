@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "aggregator.name" -}}
+{{- define "db-migrate.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "aggregator.fullname" -}}
+{{- define "db-migrate.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "aggregator.chart" -}}
+{{- define "db-migrate.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "aggregator.labels" -}}
-helm.sh/chart: {{ include "aggregator.chart" . }}
-{{ include "aggregator.selectorLabels" . }}
+{{- define "db-migrate.labels" -}}
+helm.sh/chart: {{ include "db-migrate.chart" . }}
+{{ include "db-migrate.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,41 +45,29 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "aggregator.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "aggregator.name" . }}
+{{- define "db-migrate.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "db-migrate.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "aggregator.serviceAccountName" -}}
+{{- define "db-migrate.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "aggregator.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "db-migrate.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
-
 {{/*
 Database host - defaults to postgresql subchart service name
 */}}
-{{- define "aggregator.databaseHost" -}}
+{{- define "db-migrate.databaseHost" -}}
 {{- if .Values.database.host }}
 {{- .Values.database.host }}
 {{- else }}
 {{- printf "%s-postgresql" .Release.Name }}
-{{- end }}
-{{- end }}
-
-{{/*
-Redis host - defaults to redis subchart service name
-*/}}
-{{- define "aggregator.redisHost" -}}
-{{- if .Values.redis.host }}
-{{- .Values.redis.host }}
-{{- else }}
-{{- printf "%s-redis-master" .Release.Name }}
 {{- end }}
 {{- end }}

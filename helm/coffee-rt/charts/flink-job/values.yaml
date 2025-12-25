@@ -25,14 +25,13 @@ kafka:
   topic: orders
   consumerGroup: flink-processors
 
-# PostgreSQL configuration
-postgres:
+database:
   host: ""  # Leave empty to auto-detect from release name
   port: 5432
-  database: coffee-rt
+  name: coffee-rt
   user: coffee-rt
   schema: coffee_rt
-  secretName: ""  # Leave empty to use default
+  password: coffee-rt_password
 
 # Redis configuration
 redis:
@@ -41,3 +40,6 @@ redis:
 
 # Processing configuration
 windowSeconds: 1
+
+# Logging
+logLevel: INFO

@@ -60,13 +60,13 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Database secret name
+Database secret name - defaults to postgresql subchart secret name
 */}}
 {{- define "stream-worker.databaseSecretName" -}}
 {{- if .Values.database.secretName }}
 {{- .Values.database.secretName }}
 {{- else }}
-{{- printf "%s-db-secret" .Release.Name }}
+{{- printf "%s-postgresql" .Release.Name }}
 {{- end }}
 {{- end }}
 

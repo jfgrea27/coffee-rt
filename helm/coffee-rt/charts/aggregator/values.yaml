@@ -51,7 +51,7 @@ database:
   name: coffee-rt
   user: coffee-rt
   schema: coffee_rt
-  secretName: ""
+  password: coffee-rt_password
 
 # Redis configuration
 redis:
