@@ -33,6 +33,11 @@ SERVICES = {
         "dockerfile": "backend/stream_worker/Dockerfile",
         "context": ".",
     },
+    "load-tester": {
+        "path": "backend/coffee_consumer_simulator",
+        "dockerfile": "backend/coffee_consumer_simulator/Dockerfile",
+        "context": ".",
+    },
 }
 
 # Non-Python services

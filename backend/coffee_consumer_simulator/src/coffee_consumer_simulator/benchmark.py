@@ -1,5 +1,5 @@
 """
-Benchmark Load Tests for Coffee-RT v1, v2, v3 architectures.
+Benchmark Load Tests for Coffee-RT v1, v2, v3 architectures:
 
 Mixed workload test that simulates realistic usage:
 - 70% order creation (writes)
