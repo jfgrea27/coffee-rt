@@ -64,6 +64,24 @@ flink-job:
 kafka-confluent:
   enabled: false
 
+# Load Tester subchart - for in-cluster breakpoint testing
+load-tester:
+  enabled: false
+  apiVersion: v2
+  targetHost: "http://coffee-rt-api:8005"
+  breakpoint:
+    start: 10
+    step: 10
+    interval: 15
+    max: 500
+    threshold: "0.10"
+  storage:
+    accountName: ""  # Set via --set or values file
+    containerName: "load-tests"
+  workloadIdentity:
+    enabled: true
+    clientId: ""  # Set via --set or values file
+
 # Database configuration (shared across subcharts)
 postgresql:
   enabled: true

@@ -20,6 +20,9 @@ dependencies:
 - name: flink-job
   repository: ""
   version: 0.1.0
+- name: load-tester
+  repository: ""
+  version: 0.1.0
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 18.1.13
@@ -41,5 +44,5 @@ dependencies:
 - name: grafana
   repository: https://grafana.github.io/helm-charts
   version: 10.3.0
-digest: sha256:08af8a5143da35ab8ca4cd35d63c1b8ddfb8bd908fc1f1075e2e4f85865d9bc8
-generated: "2025-12-24T01:53:28.906201Z"
+digest: sha256:f39823e44690694766557e4a5f45427daff05a4ba08be84d312030156fd2f8b1
+generated: "2026-01-13T23:20:21.117542Z"

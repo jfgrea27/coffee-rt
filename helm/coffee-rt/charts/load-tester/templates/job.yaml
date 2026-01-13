@@ -1,0 +1,94 @@
+{{- if .Values.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "load-tester.fullname" . }}-{{ .Values.apiVersion }}-{{ now | date "20060102150405" }}
+  labels:
+    {{- include "load-tester.labels" . | nindent 4 }}
+    api-version: {{ .Values.apiVersion | quote }}
+spec:
+  backoffLimit: {{ .Values.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "load-tester.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        azure.workload.identity/use: "true"
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "load-tester.fullname" . }}
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-api
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for API to be ready..."
+              until wget -q --spider {{ .Values.targetHost }}/readyz; do
+                echo "API not ready, waiting..."
+                sleep 5
+              done
+              echo "API is ready!"
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: API_VERSION
+              value: {{ .Values.apiVersion | quote }}
+            - name: TARGET_HOST
+              value: {{ .Values.targetHost | quote }}
+            - name: BREAKPOINT_START
+              value: {{ .Values.breakpoint.start | quote }}
+            - name: BREAKPOINT_STEP
+              value: {{ .Values.breakpoint.step | quote }}
+            - name: BREAKPOINT_INTERVAL
+              value: {{ .Values.breakpoint.interval | quote }}
+            - name: BREAKPOINT_MAX
+              value: {{ .Values.breakpoint.max | quote }}
+            - name: BREAKPOINT_THRESHOLD
+              value: {{ .Values.breakpoint.threshold | quote }}
+            - name: STORAGE_ACCOUNT_NAME
+              value: {{ .Values.storage.accountName | quote }}
+            - name: STORAGE_CONTAINER_NAME
+              value: {{ .Values.storage.containerName | quote }}
+            {{- if .Values.workloadIdentity.enabled }}
+            - name: AZURE_CLIENT_ID
+              value: {{ .Values.workloadIdentity.clientId | quote }}
+            {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: results
+              mountPath: /results
+      volumes:
+        - name: results
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

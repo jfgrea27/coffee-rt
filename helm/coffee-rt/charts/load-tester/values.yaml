@@ -1,0 +1,58 @@
+# Load Tester Configuration
+# Runs locust breakpoint tests and uploads results to Azure Blob Storage
+
+# Enable/disable the load tester job
+enabled: false
+
+# API version to test (v2 or v3)
+apiVersion: v2
+
+# Target API endpoint
+targetHost: "http://coffee-rt-api:8005"
+
+# Breakpoint test configuration
+breakpoint:
+  start: 10          # Starting number of users
+  step: 10           # Users to add per step
+  interval: 15       # Seconds between steps
+  max: 500           # Maximum users before stopping
+  threshold: "0.10"  # Failure rate to stop (10%)
+
+# Azure Blob Storage configuration
+storage:
+  accountName: ""           # Storage account name (required)
+  containerName: "load-tests"  # Container for results
+
+# Workload Identity configuration
+workloadIdentity:
+  enabled: true
+  clientId: ""  # Azure AD client ID for the managed identity
+
+# Container image configuration
+image:
+  repository: ""
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+# Resource limits
+resources:
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+# Job configuration
+backoffLimit: 0                    # Don't retry on failure
+ttlSecondsAfterFinished: 3600     # Clean up after 1 hour
+activeDeadlineSeconds: 3600        # Max runtime 1 hour
+
+# Pod configuration
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
