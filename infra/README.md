@@ -25,6 +25,39 @@ infra/
         └── github-oidc/
 ```
 
+## GitHub Actions OIDC Setup
+
+To enable CI/CD to deploy to Azure, create an App Registration with federated credentials:
+
+```bash
+# 1. Create the app registration
+APP_ID=$(az ad app create --display-name "coffee-rt-github-actions" --query appId -o tsv)
+
+# 2. Create service principal
+az ad sp create --id $APP_ID
+
+# 3. Add federated credential for GitHub OIDC
+az ad app federated-credential create --id $APP_ID --parameters '{
+  "name": "github-main",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:jfgrea27/coffee-rt:ref:refs/heads/main",
+  "audiences": ["api://AzureADTokenExchange"]
+}'
+
+# 4. Grant Contributor role on subscription
+az role assignment create --assignee $APP_ID --role Contributor \
+  --scope /subscriptions/$(az account show --query id -o tsv)
+
+# 5. Get values for GitHub secrets
+echo "AZURE_CLIENT_ID: $APP_ID"
+az account show --query "{AZURE_TENANT_ID: tenantId, AZURE_SUBSCRIPTION_ID: id}" -o table
+```
+
+Set these as repository secrets in GitHub (Settings → Secrets and variables → Actions):
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
 ### Connect to Bastion
 
 ```bash

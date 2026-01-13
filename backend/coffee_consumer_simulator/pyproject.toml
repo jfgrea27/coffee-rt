@@ -5,7 +5,7 @@ description = "Locust-based simulator for coffee order load testing"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "locust>=2.32.0",
+    "locust>=2.43.1",
     "azure-storage-blob>=12.19.0",
     "azure-identity>=1.15.0",
 ]

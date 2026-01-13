@@ -137,22 +137,48 @@ def check_helm_changed(changed_files: list[str]) -> bool:
     return any(f.startswith("helm/") for f in changed_files)
 
 
+def get_all_services_matrix() -> dict:
+    """Return matrix with all services for forced rebuild."""
+    matrix = {"include": []}
+    all_services = {**SERVICES, **OTHER_SERVICES}
+
+    for name, config in all_services.items():
+        matrix["include"].append(
+            {
+                "name": name,
+                "context": config["context"],
+                "dockerfile": config["dockerfile"],
+            }
+        )
+    return matrix
+
+
 def main():
-    # Get changed files from environment or stdin
-    changed_files_str = os.environ.get("CHANGED_FILES", "")
-    if not changed_files_str and not sys.stdin.isatty():
-        changed_files_str = sys.stdin.read()
+    # Check for build-all flag from commit message
+    build_all = os.environ.get("BUILD_ALL", "").lower() == "true"
 
-    changed_files = [f for f in changed_files_str.strip().split("\n") if f]
+    if build_all:
+        print("🚀 [ci-build-push-all] detected - building ALL services\n")
+        matrix = get_all_services_matrix()
+        for item in matrix["include"]:
+            print(f"✓ {item['name']}: REBUILD (forced)")
+        helm_changed = True  # Also push helm chart when building all
+    else:
+        # Get changed files from environment or stdin
+        changed_files_str = os.environ.get("CHANGED_FILES", "")
+        if not changed_files_str and not sys.stdin.isatty():
+            changed_files_str = sys.stdin.read()
 
-    print("Changed files:")
-    for f in changed_files:
-        print(f"  {f}")
-    print()
+        changed_files = [f for f in changed_files_str.strip().split("\n") if f]
 
-    # Detect changes
-    matrix = detect_changes(changed_files)
-    helm_changed = check_helm_changed(changed_files)
+        print("Changed files:")
+        for f in changed_files:
+            print(f"  {f}")
+        print()
+
+        # Detect changes
+        matrix = detect_changes(changed_files)
+        helm_changed = check_helm_changed(changed_files)
 
     # Output results
     print(f"\nMatrix: {json.dumps(matrix)}")

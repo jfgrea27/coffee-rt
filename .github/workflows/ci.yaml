@@ -24,8 +24,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check for build-all flag in commit message
+        id: check_build_all
+        run: |
+          COMMIT_MSG=$(git log -1 --format=%B)
+          if echo "$COMMIT_MSG" | grep -q '\[ci-build-push-all\]'; then
+            echo "build_all=true" >> $GITHUB_OUTPUT
+          else
+            echo "build_all=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Detect changes
         id: detect
+        env:
+          BUILD_ALL: ${{ steps.check_build_all.outputs.build_all }}
         run: |
           (git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null \
             || git diff --name-only HEAD~1 HEAD) \
