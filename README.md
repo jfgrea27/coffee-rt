@@ -75,19 +75,19 @@ For a deeper dive into why these architectures were chosen, see [BLOG.md](BLOG.m
 
 ## Tech Stack
 
-| Component        | Technology                   |
-| ---------------- | ---------------------------- |
-| API              | FastAPI (Python 3.13, async) |
-| Database         | PostgreSQL 16                |
-| Cache            | Redis 7                      |
-| Stream (v2)      | Redis Streams + Python       |
-| Stream (v3)      | Apache Kafka + Flink         |
-| Metrics          | Prometheus + Grafana         |
-| Logs             | Loki + Promtail              |
-| Load Testing     | Locust                       |
-| Orchestration    | Kubernetes + Helm            |
-| CI/CD            | GitHub Actions               |
-| Package Manager  | uv                           |
+| Component       | Technology                   |
+| --------------- | ---------------------------- |
+| API             | FastAPI (Python 3.13, async) |
+| Database        | PostgreSQL 16                |
+| Cache           | Redis 7                      |
+| Stream (v2)     | Redis Streams + Python       |
+| Stream (v3)     | Apache Kafka + Flink         |
+| Metrics         | Prometheus + Grafana         |
+| Logs            | Loki + Promtail              |
+| Load Testing    | Locust                       |
+| Orchestration   | Kubernetes + Helm            |
+| CI/CD           | GitHub Actions               |
+| Package Manager | uv                           |
 
 ---
 
@@ -156,16 +156,16 @@ locust -f backend/coffee_consumer_simulator/src/coffee_consumer_simulator/locust
 
 ## API Endpoints
 
-| Endpoint         | Method | Description                              |
-| ---------------- | ------ | ---------------------------------------- |
-| `/api/v1/order`  | POST   | Create order (direct DB write)           |
-| `/api/v2/order`  | POST   | Create order (Redis Streams)             |
-| `/api/v3/order`  | POST   | Create order (Kafka)                     |
-| `/api/dashboard` | GET    | Retrieve cached metrics                  |
-| `/ws/dashboard`  | WS     | Real-time dashboard updates              |
-| `/metrics`       | GET    | Prometheus metrics                       |
-| `/livez`         | GET    | Liveness probe                           |
-| `/readyz`        | GET    | Readiness probe                          |
+| Endpoint         | Method | Description                    |
+| ---------------- | ------ | ------------------------------ |
+| `/api/v1/order`  | POST   | Create order (direct DB write) |
+| `/api/v2/order`  | POST   | Create order (Redis Streams)   |
+| `/api/v3/order`  | POST   | Create order (Kafka)           |
+| `/api/dashboard` | GET    | Retrieve cached metrics        |
+| `/ws/dashboard`  | WS     | Real-time dashboard updates    |
+| `/metrics`       | GET    | Prometheus metrics             |
+| `/livez`         | GET    | Liveness probe                 |
+| `/readyz`        | GET    | Readiness probe                |
 
 ---
 

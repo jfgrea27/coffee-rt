@@ -84,18 +84,20 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Logging -->
+        <!-- Logging: SLF4J API for application code -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
 
+        <!-- slf4j-simple for local dev/tests only. In Flink cluster (k8s),
+             Flink provides log4j2 as SLF4J binding, configured via helm chart -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
-            <scope>runtime</scope>
+            <scope>test</scope>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -249,7 +251,9 @@
                                 <excludes>
                                     <exclude>org.apache.flink:flink-shaded-force-shading</exclude>
                                     <exclude>com.google.code.findbugs:jsr305</exclude>
+                                    <!-- Flink provides SLF4J binding (log4j2) at runtime -->
                                     <exclude>org.slf4j:*</exclude>
+                                    <!-- Exclude old log4j 1.x (Flink uses log4j2) -->
                                     <exclude>log4j:*</exclude>
                                 </excludes>
                             </artifactSet>

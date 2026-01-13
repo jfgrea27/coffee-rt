@@ -11,9 +11,12 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -60,24 +63,44 @@ public final class CoffeeOrderJob {
 
         int windowSeconds = Integer.parseInt(getEnv("WINDOW_SECONDS", "1"));
 
-        LOG.info("Starting Coffee Order Flink Job (no checkpointing - max throughput mode)");
+        // Checkpointing configuration from environment
+        boolean checkpointingEnabled = Boolean.parseBoolean(getEnv("CHECKPOINTING_ENABLED", "true"));
+        long checkpointIntervalMs = Long.parseLong(getEnv("CHECKPOINT_INTERVAL_MS", "10000"));
+        long checkpointTimeoutMs = Long.parseLong(getEnv("CHECKPOINT_TIMEOUT_MS", "60000"));
+        long minPauseBetweenCheckpointsMs = Long.parseLong(getEnv("MIN_PAUSE_BETWEEN_CHECKPOINTS_MS", "1000"));
+        int maxConcurrentCheckpoints = Integer.parseInt(getEnv("MAX_CONCURRENT_CHECKPOINTS", "1"));
+        String checkpointDir = getEnv("CHECKPOINT_DIR", "file:///tmp/flink-checkpoints");
+
+        LOG.info("Starting Coffee Order Flink Job");
         LOG.info("Kafka: {}:{} topic={} group={}", kafkaBootstrapServers, kafkaTopic, kafkaConsumerGroup);
         LOG.info("Postgres: {}:{}/{}", postgresHost, postgresPort, postgresDb);
         LOG.info("Redis: {}:{}", redisHost, redisPort);
+        LOG.info("Checkpointing: enabled={} interval={}ms dir={}",
+                checkpointingEnabled, checkpointIntervalMs, checkpointDir);
 
         // Create Flink execution environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // No checkpointing - maximum throughput mode
-        // Trade-off: On restart, may reprocess or lose some messages
-        // PostgreSQL ON CONFLICT handles duplicates safely
+        // Configure checkpointing for exactly-once semantics
+        if (checkpointingEnabled) {
+            configureCheckpointing(env, checkpointIntervalMs, checkpointTimeoutMs,
+                    minPauseBetweenCheckpointsMs, maxConcurrentCheckpoints, checkpointDir);
+        } else {
+            LOG.info("Checkpointing disabled - running in max throughput mode");
+        }
 
-        // Kafka source - start from earliest on each restart
+        // Kafka source configuration
+        // With checkpointing: use committed offsets (from checkpoint), fallback to earliest for new deployment
+        // Without checkpointing: start from latest to avoid reprocessing on restart
+        OffsetsInitializer offsetsInitializer = checkpointingEnabled
+                ? OffsetsInitializer.committedOffsets(org.apache.kafka.clients.consumer.OffsetResetStrategy.EARLIEST)
+                : OffsetsInitializer.latest();
+
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers(kafkaBootstrapServers)
                 .setTopics(kafkaTopic)
                 .setGroupId(kafkaConsumerGroup)
-                .setStartingOffsets(OffsetsInitializer.latest())  // Start from latest on restart
+                .setStartingOffsets(offsetsInitializer)
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
@@ -100,41 +123,11 @@ public final class CoffeeOrderJob {
                 .filter(order -> "v3".equals(order.getVersion()))
                 .name("Filter v3");
 
-        // No deduplication - PostgreSQL ON CONFLICT handles duplicates
-        // This maximizes throughput by avoiding keyed state overhead
-
-        // JDBC connection string
+        // Sink 1: Write v3 orders to PostgreSQL (ON CONFLICT handles duplicates)
         String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?currentSchema=%s",
                 postgresHost, postgresPort, postgresDb, postgresSchema);
-
-        // Sink 1: Write v3 orders to PostgreSQL
-        // ON CONFLICT handles any duplicates from retries/restarts
-        String insertSql = String.format(
-                "INSERT INTO %s.orders (message_id, drink, store, price, timestamp) " +
-                "VALUES (?, ?::%s.drink_type, ?::%s.store_type, ?, ?) " +
-                "ON CONFLICT (message_id) DO NOTHING",
-                postgresSchema, postgresSchema, postgresSchema);
-        v3Orders.addSink(JdbcSink.sink(
-                insertSql,
-                (statement, order) -> {
-                    statement.setString(1, order.getMessageId());
-                    statement.setString(2, order.getDrink());
-                    statement.setString(3, order.getStore());
-                    statement.setBigDecimal(4, order.getPrice());
-                    statement.setTimestamp(5, Timestamp.from(order.getTimestampAsInstant()));
-                },
-                JdbcExecutionOptions.builder()
-                        .withBatchSize(100)
-                        .withBatchIntervalMs(200)
-                        .withMaxRetries(3)
-                        .build(),
-                new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl(jdbcUrl)
-                        .withDriverName("org.postgresql.Driver")
-                        .withUsername(postgresUser)
-                        .withPassword(postgresPassword)
-                        .build()
-        )).name("PostgreSQL Sink");
+        v3Orders.addSink(createPostgresSink(jdbcUrl, postgresSchema, postgresUser, postgresPassword))
+                .name("PostgreSQL Sink");
 
         // Sink 2: Aggregate metrics in tumbling windows and write to Redis
         // Key by store to parallelize across 4 partitions (one per store)
@@ -152,6 +145,72 @@ public final class CoffeeOrderJob {
 
         // Execute the job
         env.execute("Coffee Order Processing (v3)");
+    }
+
+    /**
+     * Configure checkpointing on the execution environment.
+     *
+     * @param env the Flink execution environment
+     * @param intervalMs checkpoint interval in milliseconds
+     * @param timeoutMs checkpoint timeout in milliseconds
+     * @param minPauseMs minimum pause between checkpoints in milliseconds
+     * @param maxConcurrent maximum concurrent checkpoints
+     * @param checkpointDir directory for checkpoint storage
+     */
+    private static void configureCheckpointing(
+            StreamExecutionEnvironment env,
+            long intervalMs,
+            long timeoutMs,
+            long minPauseMs,
+            int maxConcurrent,
+            String checkpointDir) {
+
+        env.enableCheckpointing(intervalMs, CheckpointingMode.EXACTLY_ONCE);
+
+        CheckpointConfig config = env.getCheckpointConfig();
+        config.setCheckpointTimeout(timeoutMs);
+        config.setMinPauseBetweenCheckpoints(minPauseMs);
+        config.setMaxConcurrentCheckpoints(maxConcurrent);
+        config.setExternalizedCheckpointCleanup(
+                CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        config.setCheckpointStorage(checkpointDir);
+
+        LOG.info("Checkpointing configured: mode=EXACTLY_ONCE timeout={}ms minPause={}ms maxConcurrent={}",
+                timeoutMs, minPauseMs, maxConcurrent);
+    }
+
+    /**
+     * Create a JDBC sink for writing orders to PostgreSQL.
+     */
+    private static SinkFunction<CoffeeOrder> createPostgresSink(
+            String jdbcUrl, String schema, String user, String password) {
+
+        String insertSql = String.format(
+                "INSERT INTO %s.orders (message_id, drink, store, price, timestamp) "
+                        + "VALUES (?, ?::%s.drink_type, ?::%s.store_type, ?, ?) "
+                        + "ON CONFLICT (message_id) DO NOTHING",
+                schema, schema, schema);
+
+        return JdbcSink.sink(
+                insertSql,
+                (statement, order) -> {
+                    statement.setString(1, order.getMessageId());
+                    statement.setString(2, order.getDrink());
+                    statement.setString(3, order.getStore());
+                    statement.setBigDecimal(4, order.getPrice());
+                    statement.setTimestamp(5, Timestamp.from(order.getTimestampAsInstant()));
+                },
+                JdbcExecutionOptions.builder()
+                        .withBatchSize(100)
+                        .withBatchIntervalMs(200)
+                        .withMaxRetries(3)
+                        .build(),
+                new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
+                        .withUrl(jdbcUrl)
+                        .withDriverName("org.postgresql.Driver")
+                        .withUsername(user)
+                        .withPassword(password)
+                        .build());
     }
 
     private static String getEnv(String key, String defaultValue) {

@@ -93,6 +93,11 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.memory.process.size: 1024m
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
+      - flink_savepoints:/opt/flink/savepoints
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/overview || exit 1"]
       interval: 10s
@@ -114,6 +119,11 @@ services:
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
         taskmanager.memory.process.size: 1536m
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
+      - flink_savepoints:/opt/flink/savepoints
     networks:
       - coffee-rt
 
@@ -144,6 +154,14 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       WINDOW_SECONDS: 1
+      CHECKPOINTING_ENABLED: "true"
+      CHECKPOINT_INTERVAL_MS: "10000"
+      CHECKPOINT_TIMEOUT_MS: "60000"
+      MIN_PAUSE_BETWEEN_CHECKPOINTS_MS: "1000"
+      MAX_CONCURRENT_CHECKPOINTS: "1"
+      CHECKPOINT_DIR: "file:///opt/flink/checkpoints"
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
     entrypoint: >
       /bin/sh -c "
         sleep 10 &&
@@ -155,3 +173,5 @@ services:
 
 volumes:
   kafka_data:
+  flink_checkpoints:
+  flink_savepoints:
