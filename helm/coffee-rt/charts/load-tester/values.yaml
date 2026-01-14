@@ -4,7 +4,7 @@
 # Enable/disable the load tester job
 enabled: false
 
-# API version to test (v2 or v3)
+# API version to test (v1, v2, or v3)
 apiVersion: v2
 
 # Target API endpoint

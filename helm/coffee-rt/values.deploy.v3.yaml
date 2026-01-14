@@ -23,3 +23,16 @@ flink:
 flink-job:
   enabled: true
   logLevel: DEBUG
+
+# set these to false to disable monitoring
+prometheus:
+  enabled: false
+
+loki:
+  enabled: false
+
+grafana:
+  enabled: false
+
+promtail:
+  enabled: false

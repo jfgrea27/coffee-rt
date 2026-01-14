@@ -12,7 +12,7 @@ data "azurerm_storage_account" "tfstate" {
 # Create container for load test results
 resource "azurerm_storage_container" "load_tests" {
   name                  = "load-tests"
-  storage_account_id    = data.azurerm_storage_account.tfstate.id
+  storage_account_name  = data.azurerm_storage_account.tfstate.name
   container_access_type = "private"
 }
 

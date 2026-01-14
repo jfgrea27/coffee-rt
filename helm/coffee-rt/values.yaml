@@ -64,7 +64,7 @@ flink-job:
 kafka-confluent:
   enabled: false
 
-# Load Tester subchart - for in-cluster breakpoint testing
+# Load Tester subchart - for in-cluster breakpoint testing (v1, v2, or v3)
 load-tester:
   enabled: false
   apiVersion: v2
@@ -100,6 +100,7 @@ redisConfig:
 # Redis subchart configuration
 redis:
   enabled: true
+  architecture: standalone  # No replicas (saves resources)
   auth:
     enabled: false
 

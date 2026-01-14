@@ -65,7 +65,7 @@ resource "azurerm_network_interface_security_group_association" "bastion" {
   network_security_group_id = azurerm_network_security_group.bastion.id
 }
 
-# Cloud-init script to install kubectl, helm, az cli
+# Cloud-init script to install kubectl, helm, az cli, terragrunt
 locals {
   cloud_init = <<-EOF
     #cloud-config
@@ -79,22 +79,29 @@ locals {
       - gnupg
       - lsb-release
       - jq
+      - unzip
 
     runcmd:
       # Install Azure CLI
       - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
-      # Install kubectl
-      - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      - echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' > /etc/apt/sources.list.d/kubernetes.list
-      - apt-get update
-      - apt-get install -y kubectl
+      # Install kubectl and kubelogin (required for AAD-enabled AKS)
+      - az aks install-cli
 
       # Install Helm
       - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      # Install k9s (optional but useful)
-      - curl -sS https://webinstall.dev/k9s | bash
+      # Install Terragrunt
+      - curl -sL https://github.com/gruntwork-io/terragrunt/releases/download/v0.55.0/terragrunt_linux_amd64 -o /usr/local/bin/terragrunt
+      - chmod +x /usr/local/bin/terragrunt
+
+      # Install Terraform (required by terragrunt)
+      - curl -sL https://releases.hashicorp.com/terraform/1.7.0/terraform_1.7.0_linux_amd64.zip -o terraform.zip
+      - unzip terraform.zip -d /usr/local/bin/
+      - rm terraform.zip
+
+      # Install k9s
+      - curl -sL https://github.com/derailed/k9s/releases/download/v0.32.0/k9s_Linux_amd64.tar.gz | tar xz -C /usr/local/bin k9s
 
       # Create kubectl config directory
       - mkdir -p /home/${var.admin_username}/.kube
